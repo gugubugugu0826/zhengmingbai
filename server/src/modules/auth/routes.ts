@@ -15,7 +15,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { ok } from '../../common/response.js';
 import { BizError } from '../../common/errors.js';
-import { ERR_EMAIL_TAKEN, ERR_PHONE_TAKEN, ERR_USERNAME_TAKEN } from '../../common/messages.js';
+import {
+  ERR_EMAIL_TAKEN,
+  ERR_PHONE_TAKEN,
+  ERR_REGISTER_CLOSED,
+  ERR_USERNAME_TAKEN,
+  REGISTER_CLOSED_MSG,
+} from '../../common/messages.js';
 import { validateEmail, validatePassword, validateUsername } from '../../common/validators.js';
 import { sensitiveLimiter } from '../../middleware/rateLimit.js';
 import type { AuthRequest } from '../../middleware/auth.js';
@@ -33,11 +39,12 @@ import {
   getUserById,
   login,
   register,
+  resetPasswordByEmail,
   updateSettings,
   type UserRow,
 } from './service.js';
 import { changeBalance, ensureAccount, getBalance } from '../points/service.js';
-import { getPointsRules } from '../configs/service.js';
+import { getPointsRules, isRegistrationEnabled } from '../configs/service.js';
 import { authMiddleware, signToken } from '../../middleware/auth.js';
 import { maskEmail, maskPhone } from '../../common/mask.js';
 import { db, nowIso, withTransaction } from '../../db.js';
@@ -62,11 +69,22 @@ authRouter.post('/email-code', sensitiveLimiter, async (req, res, next) => {
   try {
     const { email, scene, captcha_id, captcha_code } = emailCodeSchema.parse(req.body);
     assertValidEmail(email);
-    if (!isEmailScene(scene) || scene === 'admin_login' || scene === 'change_email') {
-      // admin_login 由 /admin/auth/step1 专用入口处理；change_email 由 /account/email-code（需登录）处理
+    if (
+      !isEmailScene(scene) ||
+      scene === 'admin_login' ||
+      scene === 'change_email' ||
+      scene === 'legacy_migration'
+    ) {
+      // admin_login 由 /admin/auth/step1 专用入口处理；change_email 由 /account/email-code（需登录）处理；
+      // legacy_migration 仅供老用户迁移脚本内部使用，不开放公开路由
       throw BizError.param('不支持的发送场景');
     }
     assertCaptcha(captcha_id, captcha_code);
+    // v3 忘记密码防枚举：邮箱未注册时不发信，但统一返回"已发送"（不暴露是否注册）
+    if (scene === 'reset_password' && checkAvailability('email', email)) {
+      ok(res, { sent: true }, '验证码已发送，5 分钟内有效');
+      return;
+    }
     await sendEmailCode(email, scene as EmailScene);
     ok(res, { sent: true }, '验证码已发送，5 分钟内有效');
   } catch (err) {
@@ -85,9 +103,13 @@ const registerSchema = z.object({
   ...captchaFields,
 });
 
-/** POST /auth/register — 图形码 → 查重（明示占用）→ 格式/强度 → 邮箱码 → 建号 → 赠点 → JWT */
+/** POST /auth/register — 注册开关 → 图形码 → 查重（明示占用）→ 格式/强度 → 邮箱码 → 建号 → 赠点 → JWT */
 authRouter.post('/register', sensitiveLimiter, (req, res, next) => {
   try {
+    // v3：注册开关前置校验（configs 热读，关闭时拒绝新注册 2107）
+    if (!isRegistrationEnabled()) {
+      throw new BizError(ERR_REGISTER_CLOSED, REGISTER_CLOSED_MSG, 403);
+    }
     const input = registerSchema.parse(req.body);
     assertValidEmail(input.email);
     const usernameErr = validateUsername(input.username);
@@ -169,6 +191,32 @@ authRouter.post('/login', sensitiveLimiter, (req, res, next) => {
   }
 });
 
+// ===================== 忘记密码（v3，任务书 §5-C） =====================
+
+const passwordResetSchema = z.object({
+  email: z.string().min(3).max(254),
+  code: z.string().regex(/^\d{6}$/, '邮箱验证码为 6 位数字'),
+  new_password: z.string().min(1).max(64),
+});
+
+/**
+ * POST /auth/password-reset — 邮箱 + 一次性验证码 + 新密码重置（无鉴权，敏感限流）。
+ * 防枚举：邮箱未注册统一抛 2102（与"验证码错误"同文案，不暴露是否注册）；
+ * 重置成功旧密码立即失效（password_hash 覆盖天然生效）。
+ */
+authRouter.post('/password-reset', sensitiveLimiter, (req, res, next) => {
+  try {
+    const { email, code, new_password } = passwordResetSchema.parse(req.body);
+    assertValidEmail(email);
+    const passwordErr = validatePassword(new_password);
+    if (passwordErr) throw BizError.param(passwordErr);
+    resetPasswordByEmail(email, code, new_password);
+    ok(res, { reset: true }, '密码已重置，请用新密码登录');
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ===================== 查重接口（A-2，注册/改绑失焦用；登录链路禁止调用） =====================
 
 const checkSchema = z.object({ value: z.string().min(1).max(254) });
@@ -207,6 +255,10 @@ authRouter.post('/wechat', sensitiveLimiter, (req, res, next) => {
         | undefined;
       let created = false;
       if (!u) {
+        // v3：注册开关关闭时，微信通道同样拒绝新建账号（老用户登录不受影响）
+        if (!isRegistrationEnabled()) {
+          throw new BizError(ERR_REGISTER_CLOSED, REGISTER_CLOSED_MSG, 403);
+        }
         created = true;
         const nickname = `微信用户${openid.slice(-4)}`;
         const r = db

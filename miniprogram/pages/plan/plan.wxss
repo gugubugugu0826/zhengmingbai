@@ -1,0 +1,388 @@
+.plan-page {
+  padding: 24rpx 32rpx 0;
+  box-sizing: border-box;
+}
+
+/* 插画 */
+.plan-illu-wrap {
+  background: #ffffff;
+  border-radius: 40rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(90, 82, 72, 0.06);
+}
+
+.plan-illu {
+  width: 100%;
+  height: 352rpx;
+}
+
+.plan-illu-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3ede5;
+  font-size: 80rpx;
+}
+
+.plan-illu-card {
+  padding: 28rpx 32rpx;
+}
+
+.plan-illu-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.plan-illu-desc {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+  line-height: 1.6;
+}
+
+/* 分区 */
+.sec-title {
+  margin: 48rpx 0 8rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.sec-sub {
+  margin-bottom: 24rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+/* 丢弃建议 */
+.discard-card {
+  margin-bottom: 24rpx;
+}
+
+.discard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.discard-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.discard-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #5a5248;
+}
+
+.discard-reason {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+  line-height: 1.6;
+}
+
+.discard-note {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #7d5a2f;
+}
+
+.discard-badge {
+  flex-shrink: 0;
+}
+
+.discard-badge-modified {
+  display: inline-block;
+  background: rgba(176, 137, 104, 0.15);
+  color: #7d5a2f;
+  border-radius: 12rpx;
+  padding: 4rpx 16rpx;
+  font-size: 22rpx;
+}
+
+.discard-textarea {
+  margin-top: 24rpx;
+  width: 100%;
+  box-sizing: border-box;
+  background: #faf6ee;
+  border: 2rpx solid #f3ede5;
+  border-radius: 24rpx;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+  color: #5a5248;
+  min-height: 120rpx;
+}
+
+.discard-btns {
+  margin-top: 24rpx;
+  display: flex;
+  gap: 16rpx;
+}
+
+.discard-btn {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+}
+
+.discard-btn-sage {
+  background: rgba(123, 159, 118, 0.8);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.discard-btn-sage:active {
+  background: #5f855c;
+}
+
+.discard-btn-plain {
+  border: 2rpx solid #f3ede5;
+  color: #5a5248;
+}
+
+.discard-btn-primary {
+  background: #b08968;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.discard-btn-primary:active {
+  background: #7d5a2f;
+}
+
+.discard-btn-disabled {
+  opacity: 0.6;
+}
+
+/* 分组 */
+.group-card {
+  margin-bottom: 24rpx;
+}
+
+.group-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #5a5248;
+}
+
+.group-items {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+  line-height: 1.7;
+}
+
+/* 位置 / 添置建议 */
+.advice-card {
+  margin-bottom: 24rpx;
+}
+
+.purchase-card {
+  margin-bottom: 24rpx;
+  border: 2rpx solid rgba(123, 159, 118, 0.4);
+  background: rgba(123, 159, 118, 0.1);
+  box-shadow: none;
+}
+
+.advice-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #5a5248;
+}
+
+.advice-tip {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+/* 步骤 */
+.step-card {
+  display: flex;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.step-no {
+  width: 56rpx;
+  height: 56rpx;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #b08968;
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 600;
+  text-align: center;
+  line-height: 56rpx;
+}
+
+.step-body {
+  flex: 1;
+}
+
+.step-action {
+  font-size: 28rpx;
+  color: #5a5248;
+}
+
+.step-meta {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+}
+
+/* 照片标注 */
+.anno-card {
+  margin-bottom: 24rpx;
+  padding: 0;
+  overflow: hidden;
+}
+
+.anno-photo {
+  width: 100%;
+  height: 400rpx;
+}
+
+.anno-desc {
+  padding: 20rpx 24rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+}
+
+.anno-empty {
+  padding: 32rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+/* 找人帮我整理 */
+.help-btn {
+  margin-top: 48rpx;
+  text-align: center;
+  padding: 24rpx 0;
+  border: 2rpx solid rgba(176, 137, 104, 0.5);
+  border-radius: 24rpx;
+  background: #ffffff;
+  font-size: 28rpx;
+  color: #7d5a2f;
+}
+
+/* 底部固定栏 */
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 2rpx solid #f3ede5;
+  padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.bottom-spacer {
+  height: 180rpx;
+}
+
+.regen-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+.mini-spinner {
+  width: 28rpx;
+  height: 28rpx;
+  border: 4rpx solid #b08968;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bottom-btns {
+  display: flex;
+  gap: 24rpx;
+}
+
+.bottom-btn {
+  flex: 1;
+  padding: 24rpx 0;
+  font-size: 26rpx;
+}
+
+.bottom-btn-main {
+  flex: 2;
+  font-size: 30rpx;
+}
+
+/* 筹备中弹窗 */
+.cs-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(58, 46, 36, 0.45);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cs-dialog {
+  width: 600rpx;
+  background: #ffffff;
+  border-radius: 40rpx;
+  padding: 48rpx 36rpx;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.cs-emoji {
+  font-size: 72rpx;
+}
+
+.cs-title {
+  margin-top: 16rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.cs-desc {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+  line-height: 1.7;
+}
+
+.cs-btn {
+  margin-top: 40rpx;
+  padding: 24rpx 0;
+  background: #b08968;
+  border-radius: 24rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.cs-btn:active {
+  background: #7d5a2f;
+}

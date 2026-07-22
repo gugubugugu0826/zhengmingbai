@@ -8,8 +8,8 @@ import type { VerificationChannel } from './channel.interface.js';
 export class MockVerificationChannel implements VerificationChannel {
   readonly name = 'mock' as const;
 
-  async sendCode(target: string, code: string): Promise<void> {
-    // 演示环境不真正下发，打日志便于联调时取码
-    logger.info({ target, code }, '[mock] 验证码已"发送"（演示环境，日志取码）');
+  async sendCode(target: string, code: string, scene?: string): Promise<void> {
+    // 演示环境不真正下发，打日志便于联调时取码（scene 仅记录，不影响行为）
+    logger.info({ target, code, scene }, '[mock] 验证码已"发送"（演示环境，日志取码）');
   }
 }

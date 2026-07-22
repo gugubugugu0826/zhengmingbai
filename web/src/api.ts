@@ -5,9 +5,53 @@
  * v2.2 T04：/api/v1/admin/*（不含 /admin/auth/* 公开登录段）注入独立 admin token
  * （zmb_admin_token），与 C 端登录态完全隔离；admin 接口返回 2001/2003 时
  * 只清 admin token，由 AdminLogin 页负责跳回 /admin，不污染 C 端登录态。
+ *
+ * v3 T02：
+ * - HTTP 503 + code 3001（维护模式）→ maintenanceStore.enter，AppShell 渲染全屏维护页；
+ *   公告文案取响应体 data.notice，回退 message。
+ * - 错误码备注：2107=暂停注册（注册页拦截），2108=手机号占用
+ *   （注意 v3 语义迁移：2107 从"手机号占用"让位给"暂停注册"，手机号占用改用 2108）。
  */
 import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from 'axios';
 import { adminTokenStore } from './admin/auth';
+import { maintenanceStore } from './maintenance';
+
+/** v3 错误码常量（与后端共享知识 §错误码 对齐） */
+export const API_CODES = {
+  /** 未登录/过期 */
+  UNAUTHORIZED: 2001,
+  /** 无权限 */
+  FORBIDDEN: 2003,
+  /** 图形码错误 */
+  CAPTCHA_WRONG: 2101,
+  /** 邮箱验证码错误或过期 */
+  EMAIL_CODE_WRONG: 2102,
+  /** 发送频繁 */
+  SEND_TOO_OFTEN: 2103,
+  /** 当日发送达上限 */
+  SEND_DAILY_LIMIT: 2104,
+  /** 邮箱已占用 */
+  EMAIL_TAKEN: 2105,
+  /** 用户名占用 */
+  USERNAME_TAKEN: 2106,
+  /** 暂停注册（v3 新语义，从"手机号占用"让位） */
+  REGISTRATION_PAUSED: 2107,
+  /** 手机号占用（v3 从 2107 迁来） */
+  PHONE_TAKEN: 2108,
+  /** 维护模式（HTTP 503） */
+  MAINTENANCE: 3001,
+} as const;
+
+interface MaintenanceBody {
+  notice?: string;
+}
+
+/** 维护模式拦截：写全局状态，AppShell 订阅后渲染 MaintenancePage 全屏 */
+function handleMaintenance(data: unknown, fallbackMessage: string): void {
+  const notice =
+    (data as MaintenanceBody | null)?.notice?.trim() || fallbackMessage || '系统维护中，请稍后再来';
+  maintenanceStore.enter(notice);
+}
 
 const TOKEN_KEY = 'zmb_token';
 
@@ -64,6 +108,9 @@ client.interceptors.response.use(
     const body = error.response?.data;
     const code = body?.code ?? -1;
     const message = body?.message ?? '网络开了小差，请稍后再试';
+    if (code === API_CODES.MAINTENANCE) {
+      handleMaintenance(body?.data, message);
+    }
     if (code === 2001 || code === 2003) {
       // /admin 会话失效：只清 admin token，由 AdminLogin 页跳回 /admin（不动 C 端登录态）
       if (window.location.pathname.startsWith('/admin')) {
@@ -89,6 +136,9 @@ export async function request<T>(
   const resp = await client.request<Envelope<T>>({ method, url, data: body, params });
   const envelope = resp.data;
   if (envelope.code !== 0) {
+    if (envelope.code === API_CODES.MAINTENANCE) {
+      handleMaintenance(envelope.data, envelope.message);
+    }
     if (envelope.code === 2001 || envelope.code === 2003) {
       if (window.location.pathname.startsWith('/admin')) {
         adminTokenStore.clear();

@@ -1,16 +1,20 @@
 /**
- * 路由装配 + 登录守卫 + 手机宽度容器。
+ * 路由装配 + 登录守卫。
  * v2.2：新增 /register /force-reset-password /account /points /privacy；
  * need_reset 用户访问受保护路由一律被拽去 /force-reset-password。
+ * v3 T02：C 端路由统一挂 AppShell 三档响应式布局壳（桌面侧栏/平板折叠+汉堡/手机底部 3Tab），
+ * 维护模式由 AppShell 全屏接管；商城 /store 与消息 /messages 已纳入 6 导航。
  */
 import { useEffect, type JSX } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { tokenStore } from './api';
 import { ToastHost } from './components/Toast';
 import { Loading } from './components/Loading';
+import { AppShell } from './components/layout/AppShell';
 import { useAuthStore } from './stores/auth';
 import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
+import ForgotPasswordPage from './pages/ForgotPassword';
 import ForceResetPasswordPage from './pages/ForceResetPassword';
 import HomePage from './pages/Home';
 import CapturePage from './pages/Capture';
@@ -18,6 +22,7 @@ import ConfirmPage from './pages/Confirm';
 import PlanPage from './pages/Plan';
 import TodoListPage from './pages/TodoList';
 import SpacesPage from './pages/Spaces';
+import SpaceDetailPage from './pages/SpaceDetail';
 import StorePage from './pages/Store';
 import MessagesPage from './pages/Messages';
 import AccountPage from './pages/Account';
@@ -32,6 +37,7 @@ import AdminLegacyUsers from './admin/pages/LegacyUsers';
 import AdminKnowledge from './admin/pages/Knowledge';
 import AdminPointsPackages from './admin/pages/PointsPackages';
 import AdminSwitches from './admin/pages/Switches';
+import AdminLogs from './admin/pages/Logs';
 import AdminAccount from './admin/pages/Account';
 
 /** 登录 + 强制改密守卫：need_reset 用户除 /force-reset-password 外一律拦截 */
@@ -77,21 +83,25 @@ export default function App(): JSX.Element {
           <Route path="/admin/knowledge" element={<AdminKnowledge />} />
           <Route path="/admin/points" element={<AdminPointsPackages />} />
           <Route path="/admin/switches" element={<AdminSwitches />} />
+          <Route path="/admin/logs" element={<AdminLogs />} />
           <Route path="/admin/account" element={<AdminAccount />} />
         </Route>
       </Route>
 
-      {/* C 端：手机宽度容器 */}
+      {/* C 端：AppShell 三档响应式布局壳（v3 T02） */}
       <Route
         path="*"
         element={
-          <div className="mx-auto flex min-h-full w-full max-w-md flex-col bg-cream shadow-card">
-            {!ready && tokenStore.get() ? (
+          !ready && tokenStore.get() ? (
+            <div className="flex min-h-screen w-full flex-col bg-cream">
               <Loading text="正在打开整明白…" />
-            ) : (
-              <Routes>
+            </div>
+          ) : (
+            <Routes>
+              <Route element={<AppShell />}>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route
                   path="/force-reset-password"
                   element={
@@ -149,6 +159,14 @@ export default function App(): JSX.Element {
                   }
                 />
                 <Route
+                  path="/spaces/:spaceId"
+                  element={
+                    <RequireAuth>
+                      <SpaceDetailPage />
+                    </RequireAuth>
+                  }
+                />
+                <Route
                   path="/store"
                   element={
                     <RequireAuth>
@@ -180,18 +198,12 @@ export default function App(): JSX.Element {
                     </RequireAuth>
                   }
                 />
-                <Route
-                  path="/privacy"
-                  element={
-                    <RequireAuth>
-                      <PrivacyPage />
-                    </RequireAuth>
-                  }
-                />
+                {/* 隐私政策公开可访问（注册页协议勾选链接） */}
+                <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="*" element={<Navigate to={tokenStore.get() ? '/home' : '/login'} replace />} />
-              </Routes>
-            )}
-          </div>
+              </Route>
+            </Routes>
+          )
         }
       />
     </Routes>

@@ -1,6 +1,7 @@
 /**
- * 隐私政策页（v2.2 A-10 第 8 项）：
+ * 隐私政策页（v3）：
  * 与 Home.tsx 首次进入弹窗的口径一致，作为常驻查阅入口。
+ * 注册页也可未登录访问（协议勾选处的链接）。
  */
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
@@ -8,9 +9,9 @@ import { PageHeader } from '../components/PageHeader';
 export default function PrivacyPage(): JSX.Element {
   const navigate = useNavigate();
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <PageHeader title="隐私政策" onBack={() => navigate('/account')} />
-      <div className="flex-1 space-y-3 px-5 pb-8 pt-4 text-[14px] leading-7 text-warm">
+    <div className="w-full max-w-3xl">
+      <PageHeader title="隐私政策" onBack={() => navigate(-1)} back />
+      <div className="space-y-3 px-5 pb-8 pt-4 text-[14px] leading-7 text-warm md:px-0">
         <p>在你使用「整明白」之前，我们想坦诚说明一下照片的去向：</p>
         <p>· 照片仅用于 AI 整理分析，不会用于其他任何用途；</p>
         <p>· 照片通过加密传输与签名链接访问，只有你自己看得到；</p>

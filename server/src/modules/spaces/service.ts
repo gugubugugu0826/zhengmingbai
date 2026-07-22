@@ -1,9 +1,12 @@
 /**
  * 空间档案服务（R11）："我的家"多空间 CRUD + 历次整理记录时间线。
  * 越权防护：所有查询强制带 user_id 条件。
+ * v3：getSpaceDetail——空间详情补 photos/after_photos 签名 URL 数组（前后对比并排展示）。
  */
 import { db, nowIso } from '../../db.js';
 import { BizError } from '../../common/errors.js';
+import { storage } from '../upload/storage.js';
+import type { PhotoRow } from '../upload/service.js';
 
 const SPACE_TYPES = new Set([
   'bedroom', 'kitchen', 'wardrobe', 'study', 'bathroom',
@@ -75,6 +78,67 @@ export function updateSpace(
 export function deleteSpace(userId: number, spaceId: number): void {
   getSpace(userId, spaceId);
   db.prepare('DELETE FROM spaces WHERE id = ? AND user_id = ?').run(spaceId, userId);
+}
+
+// ===================== v3：空间详情含前后对比（任务书 §5-F，架构 §3.3⑥） =====================
+
+/** 空间详情响应：基础字段 + 整理前/整理后签名 URL 数组 + 实时状态 */
+export interface SpaceDetail extends SpaceRow {
+  /** 整理前照片（kind='before'，15 分钟签名 URL，按拍摄序） */
+  photos: string[];
+  /** 整理后照片（kind='after'，收尾拍照存档） */
+  after_photos: string[];
+  /** 空间状态机口径：已采纳未开始=待执行；有勾选=执行中；全勾=已完成 */
+  status: string;
+}
+
+/**
+ * 空间详情：聚合该空间全部会话的照片（before/after 分桶，签名 URL）。
+ * 状态按最近一次已采纳方案的勾选进度实时计算（不信任何静态数字）。
+ */
+export function getSpaceDetail(userId: number, spaceId: number): SpaceDetail {
+  const space = getSpace(userId, spaceId);
+  const rows = db
+    .prepare(
+      `SELECT p.cos_key, p.kind
+       FROM photos p
+       JOIN sessions s ON s.id = p.session_id
+       WHERE s.space_id = ? AND p.user_id = ? AND p.status = 'active'
+       ORDER BY p.taken_order, p.id`,
+    )
+    .all(spaceId, userId) as Array<Pick<PhotoRow, 'cos_key'> & { kind: string }>;
+  const photos: string[] = [];
+  const afterPhotos: string[] = [];
+  for (const row of rows) {
+    if (row.kind === 'after') afterPhotos.push(storage.signedUrl(row.cos_key));
+    else photos.push(storage.signedUrl(row.cos_key));
+  }
+  return { ...space, photos, after_photos: afterPhotos, status: spaceStatus(userId, spaceId) };
+}
+
+/** 空间状态实时计算：最新已采纳（planned/executing/done）会话的清单勾选进度 */
+function spaceStatus(userId: number, spaceId: number): string {
+  const session = db
+    .prepare(
+      `SELECT id, status FROM sessions
+       WHERE space_id = ? AND user_id = ? AND status IN ('planned', 'executing', 'done')
+       ORDER BY id DESC LIMIT 1`,
+    )
+    .get(spaceId, userId) as { id: number; status: string } | undefined;
+  if (!session) return '待整理';
+  if (session.status === 'done') return '已完成';
+  const plan = db
+    .prepare(`SELECT id FROM plans WHERE session_id = ? AND is_final = 1 ORDER BY version DESC LIMIT 1`)
+    .get(session.id) as { id: number } | undefined;
+  if (!plan) return '待执行';
+  const agg = db
+    .prepare(
+      `SELECT COUNT(*) AS total, COALESCE(SUM(checked), 0) AS checked FROM plan_items WHERE plan_id = ?`,
+    )
+    .get(plan.id) as { total: number; checked: number };
+  if (agg.total === 0 || agg.checked === 0) return '待执行';
+  if (agg.checked >= agg.total) return '已完成';
+  return '执行中';
 }
 
 /** 空间历史记录（按时间倒序，R11） */

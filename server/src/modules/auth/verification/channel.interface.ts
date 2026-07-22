@@ -4,6 +4,10 @@
  */
 export interface VerificationChannel {
   readonly name: 'email' | 'sms' | 'mock';
-  /** 发送验证码到目标（手机号或邮箱） */
-  sendCode(target: string, code: string): Promise<void>;
+  /**
+   * 发送验证码到目标（手机号或邮箱）。
+   * v3：scene 可选（默认参数，向后兼容）——SES 通道按 scene 映射模板与变量名，
+   * mock/sms 通道忽略该参数。
+   */
+  sendCode(target: string, code: string, scene?: string): Promise<void>;
 }

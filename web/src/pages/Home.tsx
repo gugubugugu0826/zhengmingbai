@@ -1,5 +1,7 @@
 /**
- * 首页：问候语 + 新用户礼包标签 + "我的家"空间卡片流 + "开始整理"大按钮。
+ * 首页（v3 A4/A5，按设计稿改造）：
+ * 欢迎语 + AI 方案 Hero 卡 + 我的家完成度卡片 + 快捷入口 + 消息提醒面板。
+ * 桌面：Hero + 侧栏（点数/快捷入口/消息面板）双栏，我的家卡片网格 md:2 desktop:3。
  * 首次进入（privacy_agreed=false）弹隐私政策，不同意不能继续。
  */
 import { useEffect, useState, type JSX } from 'react';
@@ -7,9 +9,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { Empty, Loading } from '../components/Loading';
 import { Modal } from '../components/Modal';
-import { TabBar } from '../components/TabBar';
 import { toast, useAuthStore } from '../stores/auth';
 import { SPACE_TYPE_LABELS, type PublicUser, type Space } from '../types';
+
+interface MessageItem {
+  id: number;
+  type: string;
+  title: string;
+  content: string;
+  link: string | null;
+  is_read: number;
+  created_at: string;
+}
 
 function formatLastTime(iso: string | null): string {
   if (!iso) return '还没整理过';
@@ -19,6 +30,22 @@ function formatLastTime(iso: string | null): string {
   if (days === 1) return '昨天整理过';
   if (days < 30) return `${days} 天前整理过`;
   return `${Math.floor(days / 30)} 个月前整理过`;
+}
+
+/** 空间类型 emoji（与 Capture 页一致） */
+function spaceEmoji(spaceType: string): string {
+  const map: Record<string, string> = {
+    kitchen: '🍳',
+    wardrobe: '👗',
+    bedroom: '🛏️',
+    study: '📚',
+    bathroom: '🛁',
+    living: '🛋️',
+    office: '💼',
+    shop: '🏪',
+    warehouse: '📦',
+  };
+  return map[spaceType] ?? '🏠';
 }
 
 /** 隐私政策弹窗（R19）：同意落 privacy_agreed_at，不同意退出到登录页 */
@@ -82,12 +109,11 @@ function PrivacyModal({ user }: { user: PublicUser }): JSX.Element | null {
 
 export default function HomePage(): JSX.Element {
   const user = useAuthStore((s) => s.user);
-  const setUser = useAuthStore((s) => s.setUser);
   const balance = useAuthStore((s) => s.balance);
   const navigate = useNavigate();
   const [spaces, setSpaces] = useState<Space[] | null>(null);
   const [unread, setUnread] = useState(0);
-  const [showSettings, setShowSettings] = useState(false);
+  const [messages, setMessages] = useState<MessageItem[]>([]);
 
   // R31/PRD 4.6：新用户首次进入首页提示注册赠点（只弹一次，localStorage 记忆）
   useEffect(() => {
@@ -105,194 +131,218 @@ export default function HomePage(): JSX.Element {
         toast(err instanceof ApiError ? err.message : '空间列表加载失败', 'error');
         setSpaces([]);
       });
-    // 站内消息未读数（R48 铃铛红点；接口未就绪时静默失败）
     api
       .get<{ count: number }>('/messages/unread-count')
       .then((d) => setUnread(d.count))
       .catch(() => undefined);
-  }, []);
-
-  /** 设置开关：保存失败回滚 */
-  const toggleSetting = (key: 'reminder_enabled' | 'delete_after_analysis', value: 0 | 1): void => {
-    if (!user) return;
-    const prev = user;
-    setUser({ ...user, [key]: value });
+    // 消息提醒面板：最近 3 条
     api
-      .patch<PublicUser>('/auth/settings', { [key]: value })
-      .then((fresh) => setUser(fresh))
-      .catch((err: unknown) => {
-        setUser(prev);
-        toast(err instanceof ApiError ? err.message : '设置保存失败', 'error');
-      });
-  };
+      .get<MessageItem[]>('/messages')
+      .then((list) => setMessages(list.slice(0, 3)))
+      .catch(() => undefined);
+  }, []);
 
   if (!user) return <Loading />;
 
   const hour = new Date().getHours();
   const greeting = hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
+  const spaceList = spaces ?? [];
+  const totalSessions = spaceList.reduce((sum, s) => sum + s.session_count, 0);
 
   return (
-    <div className="flex min-h-full flex-1 flex-col pb-20">
+    <div className="w-full pb-2">
       <PrivacyModal user={user} />
 
-      <div className="px-5 pt-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-[22px] font-semibold text-warm">
-              {greeting}，{user.nickname || '朋友'}
-            </h1>
-            <p className="mt-1 text-[13px] text-warm-light">今天想把哪个角落整明白？</p>
-          </div>
-          <div className="flex items-start gap-3">
-            {/* 站内消息铃铛（R48） */}
-            <button
-              type="button"
-              aria-label="站内消息"
-              className="relative mt-0.5 text-[20px]"
-              onClick={() => navigate('/messages')}
-            >
-              🔔
-              {unread > 0 && (
-                <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
-                  {unread > 99 ? '99+' : unread}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              aria-label="设置"
-              className="mt-0.5 text-[20px]"
-              onClick={() => setShowSettings(true)}
-            >
-              ⚙️
-            </button>
-            <Link
-              to="/store"
-              className="rounded-tag bg-soft px-3 py-1.5 text-[13px] text-warm active:bg-sage/40"
-            >
-              {balance} 点
-            </Link>
-          </div>
+      {/* 欢迎语 */}
+      <div className="flex items-end justify-between px-1 pt-4 md:px-0 md:pt-0">
+        <div>
+          <h1 className="text-[22px] font-semibold text-warm md:text-[26px]">
+            {greeting}，{user.nickname || user.username || '朋友'}
+          </h1>
+          <p className="mt-1 text-[13px] text-warm-light">今天想把哪个角落整明白？</p>
         </div>
-      </div>
-
-      <div className="mt-6 flex-1 px-5">
-        <h2 className="mb-3 text-[16px] font-semibold text-warm">我的家</h2>
-        {spaces === null ? (
-          <Loading />
-        ) : spaces.length === 0 ? (
-          <Empty text="还没有空间档案" hint="点下方按钮，从第一个房间开始吧" />
-        ) : (
-          <div className="space-y-4">
-            {spaces.map((space) => (
-              <button
-                key={space.id}
-                type="button"
-                className="flex w-full items-center gap-4 rounded-card bg-card p-4 text-left shadow-card active:bg-soft/60"
-                onClick={() => navigate('/spaces')}
-              >
-                <div className="flex h-14 w-14 items-center justify-center rounded-btn bg-soft text-2xl">
-                  {space.space_type === 'kitchen'
-                    ? '🍳'
-                    : space.space_type === 'wardrobe'
-                      ? '👗'
-                      : space.space_type === 'bedroom'
-                        ? '🛏️'
-                        : space.space_type === 'study'
-                          ? '📚'
-                          : space.space_type === 'bathroom'
-                            ? '🛁'
-                            : space.space_type === 'living'
-                              ? '🛋️'
-                              : '🏠'}
-                </div>
-                <div className="flex-1">
-                  <div className="text-[15px] font-medium text-warm">{space.name}</div>
-                  <div className="mt-0.5 text-[12px] text-warm-light">
-                    {SPACE_TYPE_LABELS[space.space_type] ?? '空间'} · {formatLastTime(space.last_session_at)}
-                  </div>
-                </div>
-                <div className="text-[12px] text-warm-light">{space.session_count} 次 ›</div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="px-5 pt-6">
         <button
           type="button"
-          className="w-full rounded-btn bg-primary py-4 text-[17px] font-semibold text-white shadow-card active:bg-primary-dark"
-          onClick={() => navigate('/capture')}
+          aria-label="站内消息"
+          className="relative text-[22px] md:hidden"
+          onClick={() => navigate('/messages')}
         >
-          开始整理
+          🔔
+          {unread > 0 && (
+            <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium leading-none text-white">
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
         </button>
       </div>
 
-      <TabBar />
-
-      {/* 设置弹层：默认保留整理记录（delete_after_analysis 反值）+ 30 天复查提醒（PRD 4.2/4.3） */}
-      {showSettings && (
-        <Modal open onClose={() => setShowSettings(false)}>
-          <h2 className="mb-4 text-[17px] font-semibold text-warm">设置</h2>
-          <div className="space-y-4">
-            <SettingRow
-              label="默认保留整理记录"
-              desc="改变新一次整理的默认选择，单次上传时仍可临时改。"
-              checked={user.delete_after_analysis === 0}
-              onChange={(on) => toggleSetting('delete_after_analysis', on ? 0 : 1)}
-            />
-            <SettingRow
-              label="30 天复查提醒"
-              desc="整理完 30 天后提醒你回去看看，保持战果。"
-              checked={user.reminder_enabled === 1}
-              onChange={(on) => toggleSetting('reminder_enabled', on ? 1 : 0)}
-            />
+      {/* 主区：Hero + 我的家（左）｜ 侧栏（右，桌面档） */}
+      <div className="mt-5 grid gap-5 md:grid-cols-3">
+        <div className="md:col-span-2">
+          {/* AI 方案 Hero 卡 */}
+          <div className="rounded-card bg-gradient-to-r from-primary to-primary-dark p-5 text-white shadow-card md:p-6">
+            <div className="text-[13px] opacity-85">AI 整理收纳助手</div>
+            <h2 className="mt-1 text-[20px] font-semibold leading-8">
+              拍几张照片，
+              <br className="md:hidden" />
+              让 AI 帮你出一份整理方案
+            </h2>
+            <p className="mt-1 text-[13px] leading-6 opacity-90">
+              分好类、标好位置、排好步骤，照着做就行。
+            </p>
+            <button
+              type="button"
+              className="mt-4 rounded-btn bg-card px-5 py-2.5 text-[14px] font-semibold text-primary-dark active:bg-tint"
+              onClick={() => navigate('/capture')}
+            >
+              📸 开始整理
+            </button>
           </div>
-          <button
-            type="button"
-            className="mt-5 w-full rounded-btn bg-primary py-3 text-[14px] font-medium text-white active:bg-primary-dark"
-            onClick={() => setShowSettings(false)}
-          >
-            好了
-          </button>
-        </Modal>
-      )}
-    </div>
-  );
-}
 
-/** 设置开关行 */
-function SettingRow({
-  label,
-  desc,
-  checked,
-  onChange,
-}: {
-  label: string;
-  desc: string;
-  checked: boolean;
-  onChange: (on: boolean) => void;
-}): JSX.Element {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <div>
-        <div className="text-[14px] font-medium text-warm">{label}</div>
-        <div className="mt-0.5 text-[12px] leading-5 text-warm-light">{desc}</div>
+          {/* 我的家完成度卡片 */}
+          <div className="mt-5">
+            <div className="mb-3 flex items-end justify-between px-1 md:px-0">
+              <h2 className="text-[16px] font-semibold text-warm">我的家</h2>
+              <Link to="/spaces" className="text-[13px] text-primary">
+                全部空间 ›
+              </Link>
+            </div>
+            {spaces === null ? (
+              <Loading />
+            ) : spaceList.length === 0 ? (
+              <Empty text="还没有空间档案" hint="点上方「开始整理」，从第一个房间开始吧" />
+            ) : (
+              <>
+                {/* 完成度总览 */}
+                <div className="mb-4 rounded-card bg-card p-4 shadow-card">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[14px] text-warm">
+                      已有 <span className="font-semibold text-primary-dark">{spaceList.length}</span> 个空间
+                      · 累计整理 <span className="font-semibold text-primary-dark">{totalSessions}</span> 次
+                    </div>
+                    <span className="text-[22px]">🏡</span>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-soft">
+                    <div
+                      className="h-full rounded-full bg-sage transition-all duration-500"
+                      style={{ width: `${Math.min(100, spaceList.length * 12 + totalSessions * 6)}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-[12px] text-warm-light">家是一点一点整明白的，继续保持～</p>
+                </div>
+                {/* 空间卡片网格 */}
+                <div className="grid gap-4 md:grid-cols-2 desktop:grid-cols-3">
+                  {spaceList.map((space) => (
+                    <button
+                      key={space.id}
+                      type="button"
+                      className="flex items-center gap-4 rounded-card bg-card p-4 text-left shadow-card transition-shadow hover:shadow-float"
+                      onClick={() => navigate(`/spaces/${space.id}`)}
+                    >
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-btn bg-soft text-2xl">
+                        {spaceEmoji(space.space_type)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[15px] font-medium text-warm">{space.name}</div>
+                        <div className="mt-0.5 text-[12px] text-warm-light">
+                          {SPACE_TYPE_LABELS[space.space_type] ?? '空间'} · {formatLastTime(space.last_session_at)}
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-[12px] text-warm-light">{space.session_count} 次 ›</div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 侧栏：点数卡 + 快捷入口 + 消息提醒面板 */}
+        <aside className="space-y-4">
+          {/* 我的点数 */}
+          <Link
+            to="/store"
+            className="block rounded-card bg-card p-4 shadow-card transition-shadow hover:shadow-float"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[12px] text-warm-light">我的点数</div>
+                <div className="mt-0.5 text-[24px] font-semibold text-primary-dark">{balance}</div>
+              </div>
+              <span className="text-[26px]">🪙</span>
+            </div>
+            <div className="mt-1 text-[12px] text-warm-light">
+              {balance >= 10 ? '够做一次完整的整理啦～' : '快用完啦，去商城看看'}
+            </div>
+          </Link>
+
+          {/* 快捷入口 */}
+          <div className="rounded-card bg-card p-4 shadow-card">
+            <h3 className="mb-3 text-[14px] font-semibold text-warm">快捷入口</h3>
+            <div className="grid grid-cols-4 gap-2 md:grid-cols-2">
+              {[
+                { to: '/capture', icon: '📸', label: '开始整理' },
+                { to: '/spaces', icon: '🗂️', label: '我的空间' },
+                { to: '/store', icon: '🛍️', label: '商城' },
+                { to: '/account', icon: '👤', label: '账号' },
+              ].map((item) => (
+                <button
+                  key={item.to}
+                  type="button"
+                  className="flex flex-col items-center gap-1 rounded-btn bg-cream py-3 text-[12px] text-warm transition-colors hover:bg-tint"
+                  onClick={() => navigate(item.to)}
+                >
+                  <span className="text-[20px]">{item.icon}</span>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 消息提醒面板 */}
+          <div className="rounded-card bg-card p-4 shadow-card">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-[14px] font-semibold text-warm">
+                消息提醒
+                {unread > 0 && (
+                  <span className="ml-2 rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-medium text-white">
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                )}
+              </h3>
+              <Link to="/messages" className="text-[12px] text-primary">
+                全部 ›
+              </Link>
+            </div>
+            {messages.length === 0 ? (
+              <p className="py-3 text-center text-[12px] leading-5 text-warm-light">
+                还没有消息
+                <br />
+                整理完 30 天后，我会提醒你回去看看
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {messages.map((msg) => (
+                  <button
+                    key={msg.id}
+                    type="button"
+                    className={`w-full rounded-btn bg-cream p-3 text-left transition-colors hover:bg-tint ${
+                      msg.is_read === 0 ? 'border-l-2 border-primary' : ''
+                    }`}
+                    onClick={() => navigate('/messages')}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 truncate text-[13px] font-medium text-warm">{msg.title}</span>
+                      {msg.is_read === 0 && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />}
+                    </div>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-warm-light">{msg.content}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-soft'}`}
-        onClick={() => onChange(!checked)}
-      >
-        <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-            checked ? 'translate-x-[22px]' : 'translate-x-0.5'
-          }`}
-        />
-      </button>
     </div>
   );
 }

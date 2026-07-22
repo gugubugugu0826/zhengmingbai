@@ -5,6 +5,10 @@
  */
 import { db, nowIso } from '../../db.js';
 import { logger } from '../../common/logger.js';
+import { getConfig } from '../configs/service.js';
+
+/** 30 天提醒默认文案（v3 设计稿口径；configs `reminder.template` 可覆盖，{{space_name}} 可变） */
+const DEFAULT_REMINDER_TEMPLATE = '整理完 30 天了，回去看看{{space_name}}保持得怎么样';
 
 /** 扫描间隔（默认 10 分钟；QA 可设 REMINDER_SCAN_INTERVAL_MS=60000 分钟级测） */
 const SCAN_INTERVAL_MS = Number(process.env.REMINDER_SCAN_INTERVAL_MS || 10 * 60 * 1000);
@@ -40,14 +44,16 @@ export function scanDueReminders(): number {
       );
       continue;
     }
-    // PRD 4.3 文案
+    // v3 设计稿文案（configs reminder.template 可热改；{{space_name}} 替换为空间名）
+    const template = getConfig<string>('reminder.template', DEFAULT_REMINDER_TEMPLATE);
+    const content = template.replaceAll('{{space_name}}', r.space_name);
     db.prepare(
       `INSERT INTO messages (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)`,
     ).run(
       r.user_id,
       'reminder_30d',
       `好久不见，${r.space_name}还好吗？`,
-      '距离上次整理过去 30 天啦，回去看看有没有反弹？拍张照，我帮你复查一遍～',
+      content,
       `/spaces?focus=${r.space_id}`,
     );
     db.prepare(`UPDATE reminders SET status = 'sent', updated_at = ? WHERE id = ?`).run(

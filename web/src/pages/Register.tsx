@@ -1,33 +1,39 @@
 /**
- * 注册页（v2.2 A-2）：
- * 表单顺序：图形验证码 → 邮箱 → 邮箱验证码 → 密码 → 确认密码 → 用户名（即时查重）→ 手机号（选填，即时查重）。
- * 注册成功即登录（后端返回 token + user），need_reset=false，直接跳首页。
+ * 注册页（v3 §四 验证码新规则）：
+ * - 表单内不常驻图形码：点「发送验证码」弹 CaptchaDialog，通过后才调发信接口（scene=register）
+ * - 注册提交复用发码时的图形码参数（后端链上只校验一次；2101 时重开弹窗重新发码）
+ * - 底部「已阅读并同意《用户协议》和《隐私政策》」勾选：默认不勾，不勾禁提交
+ * - 注册开关被拒 code 2107 → 提示"暂停注册"；2108 = 手机号占用（v3 新语义）
  */
-import { useRef, useState, type JSX } from 'react';
+import { useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, ApiError, tokenStore } from '../api';
-import { CaptchaInput, type CaptchaInputHandle, type CaptchaValue } from '../components/CaptchaInput';
+import { api, ApiError, API_CODES, tokenStore } from '../api';
+import { AuthCard } from '../components/AuthCard';
+import { CaptchaDialog } from '../components/CaptchaDialog';
+import type { CaptchaValue } from '../components/CaptchaInput';
 import { toast, useAuthStore } from '../stores/auth';
 import type { LoginData } from '../types';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^1\d{10}$/;
-const USERNAME_RE = /^[\u4e00-\u9fa5A-Za-z0-9_]{1,20}$/;
+const USERNAME_RE = /^[一-龥A-Za-z0-9_]{1,20}$/;
 
 type CheckState = 'idle' | 'checking' | 'ok' | 'taken' | 'invalid';
 
 export default function RegisterPage(): JSX.Element {
   const navigate = useNavigate();
-  const captchaRef = useRef<CaptchaInputHandle>(null);
-  const [captcha, setCaptcha] = useState<CaptchaValue>({ captchaId: '', captchaCode: '' });
   const [email, setEmail] = useState('');
   const [emailCode, setEmailCode] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaOpen, setCaptchaOpen] = useState(false);
+  /** 发码成功后保留的图形码参数：注册提交时复用 */
+  const [codeCaptcha, setCodeCaptcha] = useState<CaptchaValue | null>(null);
   const [usernameState, setUsernameState] = useState<CheckState>('idle');
   const [phoneState, setPhoneState] = useState<CheckState>('idle');
   const [emailState, setEmailState] = useState<CheckState>('idle');
@@ -69,7 +75,7 @@ export default function RegisterPage(): JSX.Element {
     setUsernameState(ok ? 'ok' : 'taken');
   };
 
-  const onPhoneBlur = async (): Promise<void> => {
+  const onPhoneBlur = (): void => {
     if (!phone) {
       setPhoneState('idle');
       return;
@@ -78,7 +84,7 @@ export default function RegisterPage(): JSX.Element {
       setPhoneState('invalid');
       return;
     }
-    // 后端只提供 check-username/check-email，手机号查重放在 register 提交时统一判定
+    // 手机号查重放在 register 提交时统一判定（后端无独立 check-phone 路由）
     setPhoneState('ok');
   };
 
@@ -96,35 +102,45 @@ export default function RegisterPage(): JSX.Element {
     setEmailState(ok ? 'ok' : 'taken');
   };
 
-  const sendEmailCode = async (): Promise<void> => {
+  /** 点「发送验证码」：本地校验 → 开图形码弹窗 */
+  const openSendCaptcha = (): void => {
     if (!EMAIL_RE.test(email)) {
       toast('请输入正确的邮箱地址', 'error');
       return;
     }
-    if (!captcha.captchaId || !captcha.captchaCode) {
-      toast('请先完成图形验证', 'error');
+    if (emailState === 'taken') {
+      toast('这个邮箱已经注册过了，直接登录吧', 'error');
       return;
     }
+    setCaptchaOpen(true);
+  };
+
+  /** 图形码通过后发码（scene=register） */
+  const sendEmailCode = async (captchaId: string, captchaCode: string): Promise<void> => {
     try {
       await api.post('/auth/email-code', {
         email,
         scene: 'register',
-        captcha_id: captcha.captchaId,
-        captcha_code: captcha.captchaCode,
+        captcha_id: captchaId,
+        captcha_code: captchaCode,
       });
       toast('验证码已发送，5 分钟内有效', 'success');
       startCountdown();
-      captchaRef.current?.refresh();
+      setCodeCaptcha({ captchaId, captchaCode });
     } catch (err) {
-      captchaRef.current?.refresh();
-      toast(err instanceof ApiError ? err.message : '发送失败，请稍后再试', 'error');
+      setCodeCaptcha(null);
+      if (err instanceof ApiError && err.code === API_CODES.CAPTCHA_WRONG) {
+        setCaptchaOpen(true);
+        toast('图形验证码不对，再来一次', 'error');
+      } else {
+        toast(err instanceof ApiError ? err.message : '发送失败，请稍后再试', 'error');
+      }
     }
   };
 
   const submit = async (): Promise<void> => {
-    // 前置校验
-    if (!captcha.captchaId || !captcha.captchaCode) {
-      toast('请先完成图形验证', 'error');
+    if (!agreed) {
+      toast('请先勾选同意《用户协议》和《隐私政策》', 'error');
       return;
     }
     if (!EMAIL_RE.test(email)) {
@@ -137,6 +153,10 @@ export default function RegisterPage(): JSX.Element {
     }
     if (!/^\d{6}$/.test(emailCode)) {
       toast('邮箱验证码是 6 位数字', 'error');
+      return;
+    }
+    if (!codeCaptcha) {
+      toast('请先点「发送验证码」获取邮箱验证码', 'error');
       return;
     }
     if (password.length < 8) {
@@ -172,21 +192,29 @@ export default function RegisterPage(): JSX.Element {
         password,
         username,
         phone: phone || undefined,
-        captcha_id: captcha.captchaId,
-        captcha_code: captcha.captchaCode,
+        captcha_id: codeCaptcha.captchaId,
+        captcha_code: codeCaptcha.captchaCode,
       });
       tokenStore.set(data.token);
       useAuthStore.setState({ user: data.user, balance: data.points.balance, ready: true });
       toast('注册成功，已送你新人礼包～', 'success');
       navigate('/home', { replace: true });
     } catch (err) {
-      captchaRef.current?.refresh();
       if (err instanceof ApiError) {
-        // 占用类错误（2105/2106/2107）明示
-        if (err.code === 2105) setEmailState('taken');
-        if (err.code === 2106) setUsernameState('taken');
-        if (err.code === 2107) setPhoneState('taken');
-        toast(err.message, 'error');
+        // v3 错误码：2107=暂停注册；2108=手机号占用；2105 邮箱占用；2106 用户名占用
+        if (err.code === API_CODES.REGISTRATION_PAUSED) {
+          toast('暂停注册', 'error');
+        } else if (err.code === API_CODES.CAPTCHA_WRONG) {
+          // 图形码参数失效：重开弹窗重新发码
+          setCodeCaptcha(null);
+          setCaptchaOpen(true);
+          toast('图形验证码过期了，请重新发送验证码', 'error');
+        } else {
+          if (err.code === API_CODES.EMAIL_TAKEN) setEmailState('taken');
+          if (err.code === API_CODES.USERNAME_TAKEN) setUsernameState('taken');
+          if (err.code === API_CODES.PHONE_TAKEN) setPhoneState('taken');
+          toast(err.message, 'error');
+        }
       } else {
         toast('注册失败，请稍后再试', 'error');
       }
@@ -213,21 +241,9 @@ export default function RegisterPage(): JSX.Element {
   };
 
   return (
-    <div className="flex min-h-full flex-1 flex-col px-5 py-8">
-      <div className="mb-6 text-center">
-        <div className="mb-2 text-4xl">🧺</div>
-        <h1 className="text-[22px] font-semibold text-warm">注册整明白</h1>
-        <p className="mt-1 text-[13px] text-warm-light">一个邮箱就能开始，送新人 20 点礼包</p>
-      </div>
-
-      <div className="space-y-4 rounded-card bg-card p-5 shadow-card">
-        {/* 1. 图形验证码 */}
-        <div>
-          <label className="mb-1 block text-[13px] text-warm-light">图形验证码</label>
-          <CaptchaInput ref={captchaRef} value={captcha} onChange={setCaptcha} />
-        </div>
-
-        {/* 2. 邮箱 */}
+    <AuthCard title="注册整明白" subtitle="一个邮箱就能开始，送新人 20 点礼包">
+      <div className="space-y-4">
+        {/* 邮箱 */}
         <div>
           <div className="mb-1 flex items-center justify-between">
             <label className="text-[13px] text-warm-light">邮箱</label>
@@ -249,7 +265,7 @@ export default function RegisterPage(): JSX.Element {
           />
         </div>
 
-        {/* 3. 邮箱验证码 */}
+        {/* 邮箱验证码（点发送弹 CaptchaDialog，表单内不常驻图形码） */}
         <div>
           <label className="mb-1 block text-[13px] text-warm-light">邮箱验证码</label>
           <div className="flex gap-3">
@@ -266,14 +282,14 @@ export default function RegisterPage(): JSX.Element {
               type="button"
               disabled={countdown > 0}
               className="w-28 rounded-btn border border-primary text-[13px] text-primary disabled:border-soft disabled:text-warm-light"
-              onClick={() => void sendEmailCode()}
+              onClick={openSendCaptcha}
             >
               {countdown > 0 ? `${countdown}s` : '发送验证码'}
             </button>
           </div>
         </div>
 
-        {/* 4. 密码 */}
+        {/* 密码 */}
         <div>
           <label className="mb-1 block text-[13px] text-warm-light">密码</label>
           <input
@@ -287,7 +303,7 @@ export default function RegisterPage(): JSX.Element {
           />
         </div>
 
-        {/* 5. 确认密码 */}
+        {/* 确认密码 */}
         <div>
           <label className="mb-1 block text-[13px] text-warm-light">确认密码</label>
           <input
@@ -304,7 +320,7 @@ export default function RegisterPage(): JSX.Element {
           )}
         </div>
 
-        {/* 6. 用户名 */}
+        {/* 用户名 */}
         <div>
           <div className="mb-1 flex items-center justify-between">
             <label className="text-[13px] text-warm-light">用户名</label>
@@ -325,7 +341,7 @@ export default function RegisterPage(): JSX.Element {
           />
         </div>
 
-        {/* 7. 手机号（选填） */}
+        {/* 手机号（选填） */}
         <div>
           <div className="mb-1 flex items-center justify-between">
             <label className="text-[13px] text-warm-light">手机号（选填）</label>
@@ -343,13 +359,37 @@ export default function RegisterPage(): JSX.Element {
               setPhone(e.target.value.replace(/\D/g, ''));
               setPhoneState('idle');
             }}
-            onBlur={() => void onPhoneBlur()}
+            onBlur={onPhoneBlur}
           />
         </div>
 
+        {/* 协议勾选（默认不勾，不勾禁提交） */}
         <button
           type="button"
-          disabled={submitting}
+          role="checkbox"
+          aria-checked={agreed}
+          className="flex w-full items-start gap-2 text-left"
+          onClick={() => setAgreed((v) => !v)}
+        >
+          <span
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[12px] ${
+              agreed ? 'border-primary bg-primary text-white' : 'border-soft bg-cream'
+            }`}
+          >
+            {agreed ? '✓' : ''}
+          </span>
+          <span className="text-[13px] leading-5 text-warm-light">
+            我已阅读并同意
+            <span className="mx-0.5 text-primary">《用户协议》</span>和
+            <Link to="/privacy" className="mx-0.5 text-primary" onClick={(e) => e.stopPropagation()}>
+              《隐私政策》
+            </Link>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          disabled={submitting || !agreed}
           className="w-full rounded-btn bg-primary py-3.5 text-[16px] font-medium text-white active:bg-primary-dark disabled:opacity-60"
           onClick={() => void submit()}
         >
@@ -363,6 +403,16 @@ export default function RegisterPage(): JSX.Element {
           </Link>
         </p>
       </div>
-    </div>
+
+      <CaptchaDialog
+        open={captchaOpen}
+        onClose={() => setCaptchaOpen(false)}
+        subtitle="通过人机验证后，注册验证码就发到你的邮箱"
+        onVerified={(captchaId, captchaCode) => {
+          setCaptchaOpen(false);
+          void sendEmailCode(captchaId, captchaCode);
+        }}
+      />
+    </AuthCard>
   );
 }

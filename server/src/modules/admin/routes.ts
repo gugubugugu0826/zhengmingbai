@@ -34,7 +34,8 @@ const pageSchema = z.object({
 adminRouter.get('/users', (req, res) => {
   const q = z
     .object({
-      phone: z.string().max(20).optional(),
+      // v3 T06：搜索框同时匹配手机号/邮箱（service 层 OR 查询），长度放宽到邮箱上限
+      phone: z.string().max(100).optional(),
       sort: z.enum(['created_at', 'spent']).default('created_at'),
       order: z.enum(['asc', 'desc']).default('desc'),
     })

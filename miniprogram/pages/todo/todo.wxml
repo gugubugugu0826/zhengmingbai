@@ -1,0 +1,78 @@
+<view class="todo-page page-pad" wx:if="{{plan}}">
+  <!-- 顶部进度 -->
+  <view class="card progress-card">
+    <view class="justify-between">
+      <view class="progress-text">已完成 {{progress.checked}}/{{progress.total}}</view>
+      <view class="progress-resume" wx:if="{{progress.checked > 0 && !allDone}}">
+        上次收拾到第 {{progress.checked}} 步，继续加油
+      </view>
+    </view>
+    <view class="progress-bar">
+      <view class="progress-fill" style="width: {{percent}}%"></view>
+    </view>
+  </view>
+
+  <!-- 步骤清单 -->
+  <view
+    class="step-card {{item.checked ? 'step-card-checked' : ''}}"
+    wx:for="{{steps}}"
+    wx:key="id"
+    data-id="{{item.id}}"
+    bindtap="onToggleStep"
+  >
+    <view class="step-check {{item.checked ? 'step-check-on' : ''}}">{{item.checked ? '✓' : ''}}</view>
+    <view class="step-body">
+      <view class="step-action {{item.checked ? 'step-action-done' : ''}}">
+        {{item.no}}. {{item.action}}
+      </view>
+      <view class="step-meta">约 {{item.est_minutes}} 分钟</view>
+    </view>
+  </view>
+
+  <!-- 收尾项：拍张整理后的照片，存到我的家 -->
+  <view class="card after-card">
+    <view class="after-head">
+      <view class="after-emoji">📷</view>
+      <view class="after-head-text">
+        <view class="after-title">拍张整理后的照片，存到我的家</view>
+        <view class="after-desc">和整理前的照片并排对比，看看自己的战果（最多 {{maxAfterPhotos}} 张）</view>
+      </view>
+    </view>
+
+    <!-- 已上传 + 待上传缩略图 -->
+    <scroll-view scroll-x class="after-strip" wx:if="{{pickedPaths.length > 0 || uploadedUrls.length > 0}}">
+      <view class="after-row">
+        <view class="after-thumb" wx:for="{{uploadedUrls}}" wx:key="index">
+          <image class="after-img after-img-done" src="{{item}}" mode="aspectFill" />
+          <view class="after-badge-done">✓</view>
+        </view>
+        <view class="after-thumb" wx:for="{{pickedPaths}}" wx:key="index">
+          <image class="after-img" src="{{item}}" mode="aspectFill" />
+          <view class="after-del" data-index="{{index}}" catchtap="onRemovePicked">×</view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="after-btns">
+      <view class="btn-primary after-btn" bindtap="onAfterCamera">📷 拍照</view>
+      <view class="btn-outline after-btn" bindtap="onAfterAlbum">🖼️ 相册选择</view>
+    </view>
+    <view
+      class="after-upload {{uploading ? 'after-upload-disabled' : ''}}"
+      wx:if="{{pickedPaths.length > 0}}"
+      bindtap="onUploadAfter"
+    >{{uploading ? '正在存档…' : '存到我的家（' + pickedPaths.length + ' 张）'}}</view>
+  </view>
+
+  <!-- 全部完成 -->
+  <block wx:if="{{allDone}}">
+    <view class="card done-card" wx:if="{{completed}}">
+      <view class="done-emoji">🎉</view>
+      <view class="done-title">搞定！给自己点个赞</view>
+      <view class="done-desc">30 天后我再来看看你。</view>
+      <view class="btn-primary done-btn" bindtap="goSpaceDetail">去看看前后对比</view>
+    </view>
+    <button class="btn-primary finish-btn" wx:else bindtap="onFinishSession">全部搞定，标记完成 🎉</button>
+  </block>
+</view>
+<view class="loading-box" wx:else>正在打开清单…</view>

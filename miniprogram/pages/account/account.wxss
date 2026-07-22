@@ -1,0 +1,305 @@
+/* 用户卡 */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 32rpx;
+}
+
+.user-avatar {
+  width: 112rpx;
+  height: 112rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3ede5;
+  border-radius: 50%;
+  font-size: 48rpx;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.user-meta {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+}
+
+/* 点数卡 */
+.points-card {
+  margin-top: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 40rpx;
+  padding: 40rpx;
+  background: linear-gradient(135deg, #b08968, #7d5a2f);
+  color: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(125, 90, 47, 0.25);
+}
+
+.points-label {
+  font-size: 26rpx;
+  opacity: 0.85;
+}
+
+.points-num {
+  margin-top: 8rpx;
+  font-size: 56rpx;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.points-desc {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.points-emoji {
+  font-size: 64rpx;
+}
+
+/* 分组标题 */
+.group-title {
+  margin: 40rpx 0 16rpx;
+  padding: 0 8rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #8a8076;
+}
+
+/* 列表行 */
+.row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  margin-bottom: 16rpx;
+}
+
+.row-label {
+  font-size: 30rpx;
+  color: #5a5248;
+}
+
+.row-value {
+  font-size: 26rpx;
+  color: #8a8076;
+  max-width: 360rpx;
+}
+
+/* 开关卡 */
+.switch-card {
+  margin-bottom: 16rpx;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.switch-text {
+  flex: 1;
+}
+
+.switch-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #5a5248;
+}
+
+.switch-desc {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+  line-height: 1.5;
+}
+
+.switch-divider {
+  margin: 24rpx 0;
+  border-top: 2rpx solid rgba(243, 237, 229, 0.6);
+}
+
+.subscribe-row {
+  margin-top: 20rpx;
+  padding: 16rpx 20rpx;
+  background: #faf6ee;
+  border-radius: 16rpx;
+}
+
+.subscribe-text {
+  font-size: 24rpx;
+  color: #b08968;
+}
+
+/* 退出登录 */
+.logout-card {
+  margin-top: 32rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #b66a5a;
+}
+
+/* ============ 弹窗 ============ */
+.dlg-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(58, 46, 36, 0.45);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dlg {
+  width: 640rpx;
+  background: #ffffff;
+  border-radius: 40rpx;
+  padding: 40rpx 36rpx;
+  box-sizing: border-box;
+}
+
+.dlg-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.dlg-desc {
+  margin-top: 16rpx;
+  margin-bottom: 24rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+  line-height: 1.6;
+}
+
+.dlg-label-row {
+  margin-top: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.state-ok {
+  font-size: 24rpx;
+  color: #8a8076;
+}
+
+.state-green {
+  color: #5f855c;
+}
+
+.state-red {
+  color: #b66a5a;
+}
+
+.dlg-field {
+  margin-top: 24rpx;
+}
+
+.captcha-row {
+  margin-top: 24rpx;
+  display: flex;
+  gap: 16rpx;
+}
+
+.captcha-input {
+  flex: 1;
+}
+
+.captcha-box {
+  width: 200rpx;
+  height: 92rpx;
+  flex-shrink: 0;
+  border: 2rpx solid #f3ede5;
+  border-radius: 24rpx;
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.captcha-img {
+  width: 100%;
+  height: 100%;
+}
+
+.captcha-placeholder {
+  font-size: 22rpx;
+  color: #8a8076;
+}
+
+.send-btn {
+  width: 200rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid #b08968;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  color: #b08968;
+}
+
+.send-btn-disabled {
+  border-color: #f3ede5;
+  color: #8a8076;
+}
+
+.mismatch {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #b66a5a;
+}
+
+.dlg-btn {
+  margin-top: 40rpx;
+  font-size: 28rpx;
+}
+
+.dlg-btn-row {
+  margin-top: 40rpx;
+  display: flex;
+  gap: 24rpx;
+}
+
+.dlg-cancel {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  border: 2rpx solid #f3ede5;
+  border-radius: 24rpx;
+  font-size: 28rpx;
+  color: #8a8076;
+}
+
+.dlg-confirm {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  background: #b08968;
+  border-radius: 24rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.dlg-confirm:active {
+  background: #7d5a2f;
+}

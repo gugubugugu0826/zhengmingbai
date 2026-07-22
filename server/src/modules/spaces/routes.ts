@@ -8,7 +8,7 @@ import type { AuthRequest } from '../../middleware/auth.js';
 import {
   createSpace,
   deleteSpace,
-  getSpace,
+  getSpaceDetail,
   listSpaces,
   spaceHistory,
   updateSpace,
@@ -32,9 +32,9 @@ spacesRouter.get('/', (req: AuthRequest, res) => {
   ok(res, listSpaces(req.userId!));
 });
 
-/** GET /spaces/:id — 空间详情 */
+/** GET /spaces/:id — 空间详情（v3：补 photos/after_photos 签名 URL + 实时状态） */
 spacesRouter.get('/:id', (req: AuthRequest, res) => {
-  ok(res, getSpace(req.userId!, Number(req.params.id)));
+  ok(res, getSpaceDetail(req.userId!, Number(req.params.id)));
 });
 
 /** GET /spaces/:id/history — 历次整理记录时间线 */

@@ -1,0 +1,234 @@
+<view class="account-page page-pad" wx:if="{{user}}">
+  <!-- 用户卡片 -->
+  <view class="card user-card">
+    <view class="user-avatar">👤</view>
+    <view class="user-info">
+      <view class="user-name">{{user.username || user.nickname || '整明白用户'}}</view>
+      <view class="user-meta ellipsis">{{user.email || '未绑定邮箱'}}</view>
+      <view class="user-meta" wx:if="{{user.phone}}">{{user.phone}}</view>
+    </view>
+  </view>
+
+  <!-- 我的点数卡 -->
+  <view class="points-card" bindtap="goPoints">
+    <view>
+      <view class="points-label">我的点数</view>
+      <view class="points-num">{{balance}}</view>
+      <view class="points-desc">点数用于 AI 分析，重生成首次免费</view>
+    </view>
+    <view class="points-emoji">🪙</view>
+  </view>
+
+  <!-- 账号管理 -->
+  <view class="group-title">账号管理</view>
+  <view class="card row-card" data-kind="username" bindtap="openDialog">
+    <view class="row-label">更改用户名</view>
+    <view class="row-value ellipsis">{{user.username || '未设置'}} ›</view>
+  </view>
+  <view class="card row-card" data-kind="phone" bindtap="openDialog">
+    <view class="row-label">{{user.phone ? '修改手机号' : '绑定手机号'}}</view>
+    <view class="row-value ellipsis">{{user.phone || ''}} ›</view>
+  </view>
+  <view class="card row-card" data-kind="email" bindtap="openDialog">
+    <view class="row-label">更改绑定邮箱</view>
+    <view class="row-value ellipsis">{{user.email || ''}} ›</view>
+  </view>
+  <view class="card row-card" data-kind="password" bindtap="openDialog">
+    <view class="row-label">更改密码</view>
+    <view class="row-value">›</view>
+  </view>
+
+  <!-- 隐私与提醒 -->
+  <view class="group-title">隐私与提醒</view>
+  <view class="card switch-card">
+    <view class="switch-row">
+      <view class="switch-text">
+        <view class="switch-label">30 天复查提醒</view>
+        <view class="switch-desc">整理完 30 天后提醒你回去看看，保持战果</view>
+      </view>
+      <switch
+        checked="{{user.reminder_enabled === 1}}"
+        color="#B08968"
+        bindchange="onToggleReminder"
+      />
+    </view>
+
+    <!-- 订阅消息授权引导（模板 ID 非空才展示） -->
+    <view class="subscribe-row" wx:if="{{subscribeTemplateId}}" bindtap="onSubscribeReminder">
+      <view class="subscribe-text">🔔 想在微信服务通知里也收到提醒？点我授权订阅</view>
+    </view>
+
+    <view class="switch-divider"></view>
+    <view class="switch-row">
+      <view class="switch-text">
+        <view class="switch-label">默认保留整理记录</view>
+        <view class="switch-desc">关闭后，新一次整理默认分析完即删照片</view>
+      </view>
+      <switch
+        checked="{{user.delete_after_analysis === 0}}"
+        color="#B08968"
+        bindchange="onToggleKeepRecords"
+      />
+    </view>
+  </view>
+
+  <view class="card row-card" bindtap="goPrivacy">
+    <view class="row-label">隐私政策</view>
+    <view class="row-value">›</view>
+  </view>
+
+  <!-- 退出登录 -->
+  <view class="card logout-card" data-kind="logout" bindtap="openDialog">退出登录</view>
+
+  <!-- ============ 弹窗：更改用户名 ============ -->
+  <view class="dlg-mask" wx:if="{{dialog === 'username'}}" bindtap="closeDialog">
+    <view class="dlg" catchtap="noop">
+      <view class="dlg-title">更改用户名</view>
+      <view class="dlg-label-row">
+        <view class="form-label">新用户名</view>
+        <view class="state-ok" wx:if="{{usernameState === 'checking'}}">检查中…</view>
+        <view class="state-ok state-green" wx:elif="{{usernameState === 'ok'}}">✓ 可用</view>
+        <view class="state-ok state-red" wx:elif="{{usernameState === 'taken'}}">已被占用</view>
+        <view class="state-ok state-red" wx:elif="{{usernameState === 'invalid'}}">格式不对</view>
+      </view>
+      <input
+        class="input"
+        maxlength="20"
+        placeholder="1-20 个字符"
+        value="{{usernameValue}}"
+        bindinput="onUsernameInput"
+        bindblur="onUsernameBlur"
+      />
+      <view class="btn-primary dlg-btn {{(submitting || usernameState === 'taken') ? 'btn-disabled' : ''}}" bindtap="onUsernameSubmit">
+        {{submitting ? '保存中…' : '保存'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 弹窗：绑定手机号 ============ -->
+  <view class="dlg-mask" wx:if="{{dialog === 'phone'}}" bindtap="closeDialog">
+    <view class="dlg" catchtap="noop">
+      <view class="dlg-title">绑定/修改手机号</view>
+      <view class="dlg-desc">本期仅登记不验证；短信验证通道开通后会升级为验证码绑定</view>
+      <input
+        class="input dlg-field"
+        type="number"
+        maxlength="11"
+        placeholder="11 位手机号"
+        value="{{phoneValue}}"
+        bindinput="onPhoneInput"
+      />
+      <view class="captcha-row">
+        <input
+          class="input captcha-input"
+          maxlength="8"
+          placeholder="输入图片里的字符"
+          value="{{phoneCaptchaCode}}"
+          bindinput="onPhoneCaptchaCodeInput"
+        />
+        <view class="captcha-box" bindtap="refreshPhoneCaptcha">
+          <image wx:if="{{phoneCaptchaSvg}}" class="captcha-img" src="{{phoneCaptchaSvg}}" mode="aspectFit" />
+          <view wx:else class="captcha-placeholder">点击刷新</view>
+        </view>
+      </view>
+      <view class="btn-primary dlg-btn {{submitting ? 'btn-disabled' : ''}}" bindtap="onPhoneSubmit">
+        {{submitting ? '绑定中…' : '确认绑定'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 弹窗：更改邮箱 ============ -->
+  <view class="dlg-mask" wx:if="{{dialog === 'email'}}" bindtap="closeDialog">
+    <view class="dlg" catchtap="noop">
+      <view class="dlg-title">更改绑定邮箱</view>
+      <view class="dlg-desc">验证码会发到新邮箱，5 分钟内有效；换绑后旧邮箱不能再登录</view>
+      <view class="dlg-label-row">
+        <view class="form-label">新邮箱</view>
+        <view class="state-ok" wx:if="{{emailState === 'checking'}}">检查中…</view>
+        <view class="state-ok state-green" wx:elif="{{emailState === 'ok'}}">✓ 可用</view>
+        <view class="state-ok state-red" wx:elif="{{emailState === 'taken'}}">已被绑定</view>
+        <view class="state-ok state-red" wx:elif="{{emailState === 'invalid'}}">格式不对</view>
+      </view>
+      <input
+        class="input"
+        maxlength="254"
+        placeholder="新邮箱地址"
+        value="{{newEmail}}"
+        bindinput="onNewEmailInput"
+        bindblur="onNewEmailBlur"
+      />
+      <view class="captcha-row">
+        <input
+          class="input captcha-input"
+          type="number"
+          maxlength="6"
+          placeholder="6 位数字验证码"
+          value="{{emailCodeValue}}"
+          bindinput="onEmailCodeInput"
+        />
+        <view class="send-btn {{emailCountdown > 0 ? 'send-btn-disabled' : ''}}" bindtap="openEmailCaptcha">
+          {{emailCountdown > 0 ? emailCountdown + 's' : '发送验证码'}}
+        </view>
+      </view>
+      <view class="btn-primary dlg-btn {{(submitting || emailState === 'taken') ? 'btn-disabled' : ''}}" bindtap="onEmailSubmit">
+        {{submitting ? '提交中…' : '确认换绑'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 弹窗：更改密码 ============ -->
+  <view class="dlg-mask" wx:if="{{dialog === 'password'}}" bindtap="closeDialog">
+    <view class="dlg" catchtap="noop">
+      <view class="dlg-title">更改密码</view>
+      <input
+        class="input dlg-field"
+        password
+        maxlength="64"
+        placeholder="当前密码"
+        value="{{oldPwd}}"
+        bindinput="onOldPwdInput"
+      />
+      <input
+        class="input dlg-field"
+        password
+        maxlength="64"
+        placeholder="新密码（至少 8 位，含字母和数字）"
+        value="{{newPwd}}"
+        bindinput="onNewPwdInput"
+      />
+      <input
+        class="input dlg-field"
+        password
+        maxlength="64"
+        placeholder="再输一次新密码"
+        value="{{newPwd2}}"
+        bindinput="onNewPwd2Input"
+      />
+      <view class="mismatch" wx:if="{{newPwd2 && newPwd !== newPwd2}}">两次输入不一致</view>
+      <view class="btn-primary dlg-btn {{submitting ? 'btn-disabled' : ''}}" bindtap="onPasswordSubmit">
+        {{submitting ? '保存中…' : '保存'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 弹窗：退出登录确认 ============ -->
+  <view class="dlg-mask" wx:if="{{dialog === 'logout'}}" bindtap="closeDialog">
+    <view class="dlg" catchtap="noop">
+      <view class="dlg-title">确认退出登录？</view>
+      <view class="dlg-desc">退出后需要重新登录才能继续整理</view>
+      <view class="dlg-btn-row">
+        <view class="dlg-cancel" bindtap="closeDialog">再想想</view>
+        <view class="dlg-confirm" bindtap="onLogoutConfirm">退出</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 图形码弹窗（更改邮箱发码用） -->
+  <captcha-dialog
+    visible="{{captchaOpen}}"
+    subtitle="通过人机验证后，验证码发到新邮箱"
+    bind:close="onCaptchaClose"
+    bind:verified="onCaptchaVerified"
+  />
+</view>
+<view class="loading-box" wx:else>加载中…</view>

@@ -9,8 +9,9 @@ body,
 }
 
 body {
-  background-color: #faf6f0;
-  color: #5a5248;
+  /* v3 设计系统：画布米白 + 主文字色（与 tailwind.config.js tokens 单一来源保持一致） */
+  background-color: #faf6ee;
+  color: #2a1f18;
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;

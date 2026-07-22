@@ -1,0 +1,52 @@
+<view class="msgs-page page-pad">
+  <view class="page-sub">复查提醒、点数变动都在这儿</view>
+
+  <!-- 筛选 Tab（全部/复查提醒/点数变动/系统通知） -->
+  <view class="tab-row">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="key"
+      class="tab-chip {{tab === item.key ? 'tab-chip-active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onSwitchTab"
+    >{{item.label}}</view>
+  </view>
+
+  <view wx:if="{{messages === null}}" class="loading-box">正在拉消息…</view>
+
+  <view wx:elif="{{filtered.length === 0}}" class="empty-box">
+    <view>{{tab === 'all' ? '还没有消息' : '没有这类消息'}}</view>
+    <view class="empty-hint">整理完 30 天后，我会在这里提醒你回去看看</view>
+  </view>
+
+  <view
+    wx:else
+    class="card msg-card {{item.is_read === 0 ? 'msg-unread' : ''}}"
+    wx:for="{{filtered}}"
+    wx:key="id"
+  >
+    <view class="msg-icon">{{item.icon}}</view>
+    <view class="msg-body">
+      <view class="msg-title-row">
+        <view class="msg-title">{{item.title}}</view>
+        <view class="dot-danger" wx:if="{{item.is_read === 0}}"></view>
+      </view>
+      <view class="msg-content">{{item.content}}</view>
+      <view class="msg-time">{{item.timeText}}</view>
+      <view class="msg-btns">
+        <view
+          class="msg-go"
+          wx:if="{{item.link}}"
+          data-id="{{item.id}}"
+          bindtap="onOpen"
+        >去看看</view>
+        <view
+          class="msg-read"
+          wx:if="{{item.is_read === 0}}"
+          data-id="{{item.id}}"
+          bindtap="onMarkRead"
+        >我知道了</view>
+      </view>
+    </view>
+  </view>
+</view>

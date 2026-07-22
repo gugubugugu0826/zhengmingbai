@@ -23,13 +23,19 @@ export const EMAIL_CODE_INVALID = 2102;
 export const EMAIL_SEND_TOO_FREQUENT = 2103;
 export const EMAIL_DAILY_LIMIT = 2104;
 
-/** 允许的业务场景（register/login/change_email/admin_login/admin_reset_password） */
+/**
+ * 允许的业务场景。
+ * v3 新增 reset_password（忘记密码，走 SES 模板 54718）；legacy_migration（54719）仅由
+ * 老用户迁移脚本内部使用，不开放给任何公开路由。
+ */
 export const EMAIL_SCENES = [
   'register',
   'login',
   'change_email',
   'admin_login',
   'admin_reset_password',
+  'reset_password',
+  'legacy_migration',
 ] as const;
 export type EmailScene = (typeof EMAIL_SCENES)[number];
 
@@ -96,7 +102,8 @@ export async function sendEmailCode(email: string, scene: EmailScene): Promise<v
   ).run(email, code, scene, expiresAt);
 
   try {
-    await verificationChannel.sendCode(email, code);
+    // v3：scene 透传通道，SES 按 scene 映射模板（54718/54717/54719/54571）
+    await verificationChannel.sendCode(email, code, scene);
   } catch (err) {
     // 发送失败：作废刚落库的码，避免用户拿着"未送达的码"反复尝试占用一次性额度
     db.prepare(

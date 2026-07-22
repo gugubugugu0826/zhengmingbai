@@ -1,0 +1,244 @@
+/* 顶部进度 */
+.progress-card {
+  margin-bottom: 40rpx;
+}
+
+.progress-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.progress-resume {
+  font-size: 24rpx;
+  color: #8a8076;
+}
+
+.progress-bar {
+  margin-top: 24rpx;
+  height: 20rpx;
+  border-radius: 10rpx;
+  background: #f3ede5;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 10rpx;
+  background: #b08968;
+  transition: width 0.3s;
+}
+
+/* 步骤卡 */
+.step-card {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  background: #ffffff;
+  border-radius: 40rpx;
+  box-shadow: 0 4rpx 16rpx rgba(90, 82, 72, 0.06);
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+}
+
+.step-card-checked {
+  background: rgba(123, 159, 118, 0.15);
+  box-shadow: none;
+}
+
+.step-check {
+  width: 48rpx;
+  height: 48rpx;
+  flex-shrink: 0;
+  border: 4rpx solid #f3ede5;
+  border-radius: 50%;
+  background: #faf6ee;
+  text-align: center;
+  line-height: 48rpx;
+  font-size: 26rpx;
+  color: #ffffff;
+}
+
+.step-check-on {
+  background: #b08968;
+  border-color: #b08968;
+}
+
+.step-body {
+  flex: 1;
+}
+
+.step-action {
+  font-size: 28rpx;
+  color: #5a5248;
+}
+
+.step-action-done {
+  color: #8a8076;
+  text-decoration: line-through;
+}
+
+.step-meta {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+}
+
+/* 收尾拍照卡 */
+.after-card {
+  margin-top: 40rpx;
+  border: 4rpx dashed rgba(176, 137, 104, 0.5);
+}
+
+.after-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 24rpx;
+}
+
+.after-emoji {
+  font-size: 44rpx;
+}
+
+.after-head-text {
+  flex: 1;
+}
+
+.after-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.after-desc {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+  line-height: 1.6;
+}
+
+.after-strip {
+  margin-top: 24rpx;
+  white-space: nowrap;
+}
+
+.after-row {
+  display: inline-flex;
+  gap: 16rpx;
+  padding: 8rpx 4rpx;
+}
+
+.after-thumb {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  flex-shrink: 0;
+}
+
+.after-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 24rpx;
+  border: 2rpx solid #f3ede5;
+}
+
+.after-img-done {
+  border-color: rgba(123, 159, 118, 0.5);
+}
+
+.after-badge-done {
+  position: absolute;
+  top: -12rpx;
+  right: -12rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #7b9f76;
+  color: #ffffff;
+  font-size: 22rpx;
+  line-height: 40rpx;
+  text-align: center;
+}
+
+.after-del {
+  position: absolute;
+  top: -12rpx;
+  right: -12rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #5a5248;
+  color: #ffffff;
+  font-size: 24rpx;
+  line-height: 40rpx;
+  text-align: center;
+}
+
+.after-btns {
+  margin-top: 24rpx;
+  display: flex;
+  gap: 24rpx;
+}
+
+.after-btn {
+  flex: 1;
+  font-size: 26rpx;
+  padding: 20rpx 0;
+}
+
+.after-upload {
+  margin-top: 24rpx;
+  text-align: center;
+  padding: 20rpx 0;
+  background: #7b9f76;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.after-upload:active {
+  background: #5f855c;
+}
+
+.after-upload-disabled {
+  opacity: 0.6;
+}
+
+/* 完成 */
+.done-card {
+  margin-top: 48rpx;
+  padding: 48rpx 32rpx;
+  border: 2rpx solid rgba(123, 159, 118, 0.4);
+  background: rgba(123, 159, 118, 0.15);
+  text-align: center;
+}
+
+.done-emoji {
+  font-size: 64rpx;
+}
+
+.done-title {
+  margin-top: 8rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.done-desc {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+.done-btn {
+  margin-top: 32rpx;
+  font-size: 28rpx;
+}
+
+.finish-btn {
+  margin-top: 48rpx;
+  width: 100%;
+  box-sizing: border-box;
+  line-height: 1.4;
+}

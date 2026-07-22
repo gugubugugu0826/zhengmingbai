@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { migrateV22 } from './migrations/v22-users-captcha.js';
+import { migrateV3 } from './migrations/v3-ops-photos.js';
 
 fs.mkdirSync(path.dirname(config.dbFile), { recursive: true });
 
@@ -322,6 +323,9 @@ CREATE INDEX IF NOT EXISTS idx_t2i_plan ON t2i_tasks(plan_id);
 
   // ===== v2.2 增量迁移（A-1/A-2/A-6：users 邮箱化加列 + captchas/email_verifications 新表） =====
   migrateV22();
+
+  // ===== v3 增量迁移（photos.kind 前后对比 + ops 开关种子 + 新三档套餐订正） =====
+  migrateV3();
 }
 
 /** 受影响行数兜底（node:sqlite 各小版本 changes 返回 number | bigint 不一） */

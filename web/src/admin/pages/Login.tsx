@@ -26,9 +26,9 @@ interface CaptchaData {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const inputCls =
-  'w-full rounded-btn border border-soft bg-cream px-3 py-2.5 text-[14px] text-warm outline-none focus:border-primary';
+  'w-full rounded-md border border-border-subtle bg-card px-3 py-2.5 text-[14px] text-warm outline-none transition-colors placeholder:text-warm-light focus:border-primary';
 const btnCls =
-  'w-full rounded-btn bg-primary px-4 py-2.5 text-[14px] font-medium text-white active:bg-primary-dark disabled:opacity-50';
+  'w-full rounded-md bg-primary px-4 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-primary-dark active:bg-primary-dark disabled:opacity-50';
 
 /** 步骤指示器（1/2/3） */
 function StepIndicator({ step }: { step: Step }): JSX.Element {
@@ -98,7 +98,7 @@ function CaptchaBox({
         <button
           type="button"
           title="看不清？点击刷新"
-          className="h-[42px] w-[110px] shrink-0 overflow-hidden rounded-btn border border-soft bg-white"
+          className="h-[42px] w-[110px] shrink-0 overflow-hidden rounded-md border border-border-subtle bg-white"
           onClick={onRefresh}
         >
           {captcha ? (
@@ -268,9 +268,9 @@ export default function AdminLogin(): JSX.Element {
   };
 
   return (
-    <div className="flex min-h-full w-full items-center justify-center bg-[#F5F2ED] px-4 py-10">
-      <div className="w-full max-w-sm rounded-card bg-card p-6 shadow-card">
-        <div className="mb-1 text-center text-[18px] font-semibold text-warm">整明白 · 总控台</div>
+    <div className="flex min-h-full w-full items-center justify-center bg-canvas px-4 py-10">
+      <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-card">
+        <div className="mb-1 text-center text-[18px] font-semibold text-warm">整明白 · 管理后台</div>
         <div className="mb-5 text-center text-[12px] text-warm-light">
           管理员双因子登录（仅管理员可进入）
         </div>
@@ -313,7 +313,7 @@ export default function AdminLogin(): JSX.Element {
 
         {step === 2 && (
           <div className="space-y-4" onKeyDown={onEnter(submitStep2)}>
-            <div className="rounded-btn bg-soft/50 px-3 py-2 text-[12px] text-warm-light">
+            <div className="rounded-md bg-soft/60 px-3 py-2 text-[12px] text-warm-light">
               验证码已发送至 <span className="font-medium text-warm">{email}</span>
             </div>
             <div>
@@ -361,7 +361,7 @@ export default function AdminLogin(): JSX.Element {
 
         {step === 3 && (
           <div className="space-y-4" onKeyDown={onEnter(submitStep3)}>
-            <div className="rounded-btn bg-soft/50 px-3 py-2 text-[12px] text-warm-light">
+            <div className="rounded-md bg-soft/60 px-3 py-2 text-[12px] text-warm-light">
               邮箱验证已通过，票据 5 分钟内有效
             </div>
             <div>

@@ -1,3 +1,7 @@
+/**
+ * v3 手机端底部 3 Tab（<768px）：首页/我的空间/账号，沿用 v2.2 TabBar 行为。
+ * 固定底部、毛玻璃底、当前项主色高亮。
+ */
 import { NavLink } from 'react-router-dom';
 
 const TABS = [
@@ -6,10 +10,12 @@ const TABS = [
   { to: '/account', label: '账号', icon: '👤' },
 ];
 
-/** 底部导航栏（手机容器内） */
-export function TabBar(): JSX.Element {
+export function BottomTab(): JSX.Element {
   return (
-    <nav className="fixed bottom-0 left-1/2 z-30 flex w-full max-w-md -translate-x-1/2 border-t border-soft bg-card/95 backdrop-blur">
+    <nav
+      aria-label="底部导航"
+      className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-border-subtle bg-card/95 backdrop-blur"
+    >
       {TABS.map((tab) => (
         <NavLink
           key={tab.to}

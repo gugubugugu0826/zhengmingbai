@@ -75,6 +75,21 @@ export const config = {
     from: process.env.SES_FROM || 'noreply@zhengmingbai.cn',
     fromAlias: '整明白',
     templateId: Number(process.env.SES_TEMPLATE_ID || 54571), // 「登录验证码」模板，变量 {{code}}
+    /**
+     * v3：SES 模板按 scene 映射（任务书 §6，env 可覆盖）。
+     * - register/login → 54571 登录验证码（变量 {{code}}）
+     * - reset_password → 54718 忘记密码验证码（变量 {{code}}）
+     * - change_email → 54717 更改绑定邮箱验证码（变量 {{code}}）
+     * - legacy_migration → 54719 账号迁移临时密码通知（变量 {{password}}）
+     * admin_login/admin_reset_password 等未列场景回落默认模板 54571。
+     */
+    templateIds: {
+      register: Number(process.env.SES_TEMPLATE_ID_REGISTER || 54571),
+      login: Number(process.env.SES_TEMPLATE_ID_LOGIN || 54571),
+      reset_password: Number(process.env.SES_TEMPLATE_ID_RESET_PASSWORD || 54718),
+      change_email: Number(process.env.SES_TEMPLATE_ID_CHANGE_EMAIL || 54717),
+      legacy_migration: Number(process.env.SES_TEMPLATE_ID_LEGACY_MIGRATION || 54719),
+    },
   },
 } as const;
 

@@ -1,13 +1,33 @@
 /**
  * 配置中心路由：读取/更新配置（一期单管理员演示版，operator 记为 user:{id}）。
+ * v3 新增 publicConfigsRouter：无鉴权公开只读接口，仅放行白名单 key（不含内部配置）。
  */
 import { Router } from 'express';
 import { z } from 'zod';
 import { ok } from '../../common/response.js';
 import type { AuthRequest } from '../../middleware/auth.js';
-import { getConfig, listConfigs, requireConfigKey, setConfig } from './service.js';
+import {
+  getConfig,
+  getMaintenance,
+  getSubscribeTemplateId,
+  listConfigs,
+  requireConfigKey,
+  setConfig,
+} from './service.js';
 
 export const configsRouter = Router();
+
+// ===================== v3：公开配置（无鉴权，白名单 key，架构 §3.3⑦） =====================
+
+export const publicConfigsRouter = Router();
+
+/** GET /configs/public — 小程序/Web 读订阅模板 ID 与维护公告（不含内部配置） */
+publicConfigsRouter.get('/public', (_req, res) => {
+  ok(res, {
+    subscribe_template_id: getSubscribeTemplateId(),
+    maintenance: getMaintenance(),
+  });
+});
 
 const updateSchema = z.object({
   key: z.string().min(1).max(100),

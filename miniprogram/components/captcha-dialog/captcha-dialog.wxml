@@ -1,0 +1,31 @@
+<!-- 图形验证码弹窗 -->
+<view class="mask" wx:if="{{visible}}" bindtap="onClose">
+  <view class="dialog" catchtap="noop">
+    <view class="title">人机验证</view>
+    <view class="subtitle">{{subtitle}}</view>
+
+    <view class="row">
+      <input
+        class="code-input"
+        type="text"
+        maxlength="8"
+        placeholder="输入图片里的字符"
+        value="{{code}}"
+        bindinput="onCodeInput"
+        confirm-type="done"
+        bindconfirm="onConfirm"
+      />
+      <view class="captcha-img-box" bindtap="refresh">
+        <image wx:if="{{svg}}" class="captcha-img" src="{{svg}}" mode="aspectFit" />
+        <view wx:else class="captcha-placeholder">{{loading ? '加载中…' : '点击刷新'}}</view>
+      </view>
+    </view>
+
+    <view class="error" wx:if="{{error}}">{{error}}</view>
+
+    <view class="btn-row">
+      <view class="btn-cancel" bindtap="onClose">取消</view>
+      <view class="btn-ok {{loading ? 'btn-ok-disabled' : ''}}" bindtap="onConfirm">确认发送</view>
+    </view>
+  </view>
+</view>

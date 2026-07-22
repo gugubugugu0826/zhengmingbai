@@ -1,0 +1,149 @@
+<view class="plan-page" wx:if="{{plan}}">
+  <!-- 示意插画 -->
+  <view class="plan-illu-wrap">
+    <image
+      wx:if="{{plan.illustration_url}}"
+      class="plan-illu"
+      src="{{plan.illustration_url}}"
+      mode="aspectFill"
+    />
+    <view wx:else class="plan-illu plan-illu-empty">🏡</view>
+    <view class="plan-illu-card">
+      <view class="plan-illu-title">整理后大概长这样</view>
+      <view class="plan-illu-desc">{{plan.content.after_state_desc}}</view>
+    </view>
+  </view>
+
+  <!-- ① 丢弃建议（写反馈修改 D4） -->
+  <block wx:if="{{discardItems.length > 0}}">
+    <view class="sec-title">① 这些东西可能用不上了</view>
+    <view class="sec-sub">不过你说了算。</view>
+    <view class="card discard-card" wx:for="{{discardItems}}" wx:key="id">
+      <view class="discard-head">
+        <view class="discard-info">
+          <view class="discard-name">{{item.itemName}}</view>
+          <view class="discard-reason">{{item.reason}}</view>
+          <view class="discard-note" wx:if="{{item.user_note}}">你的想法：{{item.user_note}}</view>
+        </view>
+        <view class="discard-badge tag-sage tag" wx:if="{{item.status === 'accepted'}}">已采纳</view>
+        <view class="discard-badge tag" wx:elif="{{item.status === 'rejected'}}">已拒绝</view>
+        <view class="discard-badge discard-badge-modified" wx:elif="{{item.status === 'modified'}}">已修改</view>
+      </view>
+
+      <!-- 写反馈修改编辑区 -->
+      <view wx:if="{{editingItemId === item.id}}">
+        <textarea
+          class="discard-textarea"
+          auto-height
+          placeholder="写下你的想法，比如：留着当纪念品"
+          value="{{editingNote}}"
+          bindinput="onNoteInput"
+        />
+        <view class="discard-btns">
+          <view class="discard-btn discard-btn-plain" bindtap="onCancelEdit">取消</view>
+          <view
+            class="discard-btn discard-btn-primary {{itemBusy ? 'discard-btn-disabled' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="onSaveModified"
+          >保存修改</view>
+        </view>
+      </view>
+      <view class="discard-btns" wx:else>
+        <view
+          class="discard-btn discard-btn-sage {{itemBusy ? 'discard-btn-disabled' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onAcceptItem"
+        >采纳</view>
+        <view
+          class="discard-btn discard-btn-plain {{itemBusy ? 'discard-btn-disabled' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onRejectItem"
+        >拒绝</view>
+        <view
+          class="discard-btn discard-btn-plain {{itemBusy ? 'discard-btn-disabled' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onEditItem"
+        >修改</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ② 分类归组 -->
+  <view class="sec-title">② 分类归组</view>
+  <view class="card group-card" wx:for="{{plan.content.groups}}" wx:key="index">
+    <view class="justify-between">
+      <view class="group-name">{{item.name}}</view>
+      <view class="tag">{{item.items.length}} 样</view>
+    </view>
+    <view class="group-items">{{item.items.join('、')}}</view>
+  </view>
+
+  <!-- ③ 放在哪儿 & 添点什么 -->
+  <view class="sec-title">③ 放在哪儿 & 添点什么</view>
+  <view class="card advice-card" wx:for="{{plan.content.storage_advice}}" wx:key="index">
+    <view class="advice-title">{{item.group}} → {{item.location}}</view>
+    <view class="advice-tip">{{item.tip}}</view>
+  </view>
+  <view class="card purchase-card" wx:for="{{plan.content.purchase_advice}}" wx:key="index">
+    <view class="advice-title">🛒 建议添置：{{item.category}}</view>
+    <view class="advice-tip">{{item.reason}}</view>
+  </view>
+
+  <!-- ④ 照着做就行 -->
+  <view class="sec-title">④ 照着做就行</view>
+  <view class="sec-sub">别担心，一步一步来。</view>
+  <view class="card step-card" wx:for="{{plan.content.steps}}" wx:key="no">
+    <view class="step-no">{{item.no}}</view>
+    <view class="step-body">
+      <view class="step-action">{{item.action}}</view>
+      <view class="step-meta">约 {{item.est_minutes}} 分钟 · {{item.target_groups.join('、')}}</view>
+    </view>
+  </view>
+
+  <!-- ⑤ 照片标注（选了 C 才展示） -->
+  <block wx:if="{{showAnnotation}}">
+    <view class="sec-title">⑤ 照片标注</view>
+    <view class="card anno-card" wx:for="{{session.photos}}" wx:key="id">
+      <image class="anno-photo" src="{{item.url}}" mode="aspectFill" />
+      <view class="anno-desc">
+        {{item.group_tag ? '分组：' + item.group_tag + ' · ' : ''}}按上面的步骤归位即可
+      </view>
+    </view>
+    <view class="card anno-card" wx:if="{{session.photos.length === 0}}">
+      <view class="anno-empty">照片已按隐私设置删除，标注不可用</view>
+    </view>
+  </block>
+
+  <!-- 找人帮我整理 -->
+  <view class="help-btn" bindtap="onShowComingSoon">🙋 不想自己动手？找人帮我整理</view>
+
+  <!-- 底部固定栏 -->
+  <view class="bottom-bar">
+    <view class="regen-hint" wx:if="{{regenerating}}">
+      <view class="mini-spinner"></view>
+      正在重新生成，大约需要 30 秒
+    </view>
+    <view class="bottom-btns">
+      <view
+        class="btn-outline bottom-btn {{(busy || regenerating) ? 'btn-disabled' : ''}}"
+        bindtap="onRegenerate"
+      >{{regenerating ? '重新生成中…' : regenCostLabel}}</view>
+      <view
+        class="btn-primary bottom-btn bottom-btn-main {{(busy || regenerating || plan.is_final === 1) ? 'btn-disabled' : ''}}"
+        bindtap="onFinalize"
+      >{{plan.is_final === 1 ? '已生成最终方案' : '全部确认，生成最终方案'}}</view>
+    </view>
+  </view>
+  <view class="bottom-spacer"></view>
+
+  <!-- 筹备中弹窗 -->
+  <view class="cs-mask" wx:if="{{showComingSoon}}" bindtap="onCloseComingSoon">
+    <view class="cs-dialog" catchtap="noop">
+      <view class="cs-emoji">🚧</view>
+      <view class="cs-title">敬请期待</view>
+      <view class="cs-desc">专业收纳师上门服务正在筹备中，上线后第一时间告诉你～</view>
+      <view class="cs-btn" bindtap="onCloseComingSoon">好的</view>
+    </view>
+  </view>
+</view>
+<view class="loading-box" wx:else>正在打开方案…</view>

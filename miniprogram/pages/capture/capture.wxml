@@ -1,0 +1,80 @@
+<view class="capture-page page-pad">
+  <!-- 空间类型选择 -->
+  <view class="sec-title">要整理哪里？</view>
+  <view class="sec-sub">选一个空间类型，AI 会按它的习惯出方案</view>
+  <view class="space-grid">
+    <view
+      wx:for="{{spaceChoices}}"
+      wx:key="type"
+      class="space-cell {{spaceType === item.type ? 'space-cell-active' : ''}}"
+      data-type="{{item.type}}"
+      bindtap="onPickSpaceType"
+    >
+      <view class="space-cell-emoji">{{item.emoji}}</view>
+      <view class="space-cell-label">{{item.label}}</view>
+    </view>
+  </view>
+
+  <!-- 拍照 / 相册 -->
+  <view class="sec-title mt-6">拍几张照片</view>
+  <view class="sec-sub">把柜门抽屉都打开，光线亮一点，AI 看得更清楚～</view>
+  <view class="photo-head">
+    <view class="tag">{{photos.length}}/{{maxPhotos}}</view>
+  </view>
+
+  <view class="pick-btns">
+    <view class="btn-primary pick-btn" bindtap="onCamera">📷 拍照</view>
+    <view class="btn-outline pick-btn" bindtap="onAlbum">🖼️ 相册选择</view>
+  </view>
+
+  <!-- 缩略图横排 -->
+  <scroll-view scroll-x class="thumb-strip" wx:if="{{photos.length > 0}}">
+    <view class="thumb-row">
+      <view class="thumb" wx:for="{{photos}}" wx:key="id">
+        <image class="thumb-img" src="{{item.path}}" mode="aspectFill" />
+        <view class="thumb-del" data-id="{{item.id}}" catchtap="onRemovePhoto">×</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 常驻隐私提示 -->
+  <view class="privacy-tip">
+    🔒 避免拍到证件、银行卡、他人面部。照片只用于本次整理分析，你可以随时删除。
+  </view>
+
+  <!-- 保留到我的家勾选 -->
+  <view class="card keep-card" bindtap="onToggleKeep">
+    <view class="keep-check {{keepPhotos ? 'keep-check-on' : ''}}">{{keepPhotos ? '✓' : ''}}</view>
+    <view class="keep-text">
+      <view class="keep-title">把这次整理保留到「我的家」，方便以后回看</view>
+      <view class="keep-desc">不勾选的话，分析完成后照片就会删掉，不会留在服务器上。</view>
+    </view>
+  </view>
+
+  <!-- 提交 -->
+  <button
+    class="btn-primary next-btn {{(!spaceType || photos.length === 0) ? 'btn-disabled' : ''}}"
+    disabled="{{!spaceType || photos.length === 0}}"
+    bindtap="onNext"
+  >好了，下一步（{{photos.length}} 张）</button>
+
+  <!-- 首次贴士浮层 -->
+  <view class="tips-mask" wx:if="{{showTips}}">
+    <view class="tips-dialog" catchtap="noop">
+      <view class="tips-emoji">📸</view>
+      <view class="tips-title">{{tip.title}}</view>
+      <view class="tips-desc">{{tip.desc}}</view>
+      <view class="tips-dots">
+        <view
+          wx:for="{{[0, 1, 2]}}"
+          wx:key="*this"
+          class="tips-dot {{tipIndex === item ? 'tips-dot-active' : ''}}"
+        ></view>
+      </view>
+      <view class="tips-btns">
+        <view class="tips-skip" bindtap="closeTips">跳过</view>
+        <view class="tips-next" bindtap="onTipNext">{{tipLast ? '知道啦' : '下一条'}}</view>
+      </view>
+    </view>
+  </view>
+</view>

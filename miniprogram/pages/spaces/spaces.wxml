@@ -1,0 +1,38 @@
+<view class="spaces-page page-pad">
+  <view class="page-sub">每个空间的整理历史和前后对比都在这儿</view>
+
+  <view wx:if="{{spaces === null}}" class="loading-box">正在打开空间档案…</view>
+
+  <view wx:elif="{{spaces.length === 0}}" class="empty-box">
+    <view class="empty-emoji">🗂️</view>
+    <view>还没有空间档案</view>
+    <view class="empty-hint">去首页点「开始整理」，建第一个空间吧</view>
+    <view class="btn-primary empty-btn" bindtap="goCapture">📸 开始整理</view>
+  </view>
+
+  <block wx:else>
+    <view
+      class="card space-card {{item.focused ? 'space-card-focused' : ''}}"
+      wx:for="{{spaces}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="goSpaceDetail"
+    >
+      <view class="space-head">
+        <view class="space-emoji">{{item.emoji}}</view>
+        <view class="space-info">
+          <view class="space-name ellipsis">{{item.name}}</view>
+          <view class="space-type">{{item.typeLabel}}</view>
+        </view>
+        <view class="space-status status-{{item.status === '已完成' ? 'done' : item.status === '执行中' ? 'doing' : 'pending'}}" wx:if="{{item.status}}">
+          {{item.status}}
+        </view>
+        <view class="space-arrow">›</view>
+      </view>
+      <view class="space-foot">
+        <view>整理过 {{item.session_count}} 次</view>
+        <view>{{item.lastTimeText}}</view>
+      </view>
+    </view>
+  </block>
+</view>

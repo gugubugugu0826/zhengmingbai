@@ -11,7 +11,7 @@ import { Loading } from '../../components/Loading';
 import { toast } from '../../stores/auth';
 import { adminTokenStore } from '../auth';
 import { fmtTime } from '../api';
-import { AdminEmpty, AdminModal, btnGhostCls, btnPrimaryCls, cardCls, inputCls, tableCls, tdCls, thCls } from '../ui';
+import { AdminEmpty, AdminModal, btnGhostCls, btnPrimaryCls, cardCls, inputCls, PageTitle, StatusBadge, tableCls, tdCls, thCls } from '../ui';
 
 interface AdminRow {
   id: number;
@@ -236,10 +236,10 @@ function ResetModal({ admin, onClose }: { admin: AdminRow; onClose: () => void }
       ) : (
         <div className="space-y-4 text-center">
           <p className="text-[13px] text-warm-light">新密码（只显示这一次，请截图/抄录转交）：</p>
-          <div className="rounded-btn border-2 border-primary/40 bg-primary/5 py-4 text-[26px] font-semibold tracking-[0.2em] text-primary-dark">
+          <div className="rounded-md border-2 border-primary/40 bg-primary/5 py-4 text-[26px] font-semibold tracking-[0.2em] text-primary-dark">
             {newPassword}
           </div>
-          <p className="text-[12px] text-red-500">
+          <p className="text-[12px] text-danger">
             关闭后无法再次查看，数据库里只存哈希，谁也查不到原文
           </p>
           <button type="button" className={`${btnPrimaryCls} w-full`} onClick={onClose}>
@@ -276,10 +276,12 @@ export default function AdminAccount(): JSX.Element {
 
   return (
     <div className="space-y-4">
+      <PageTitle title="管理员账号" desc="改自己的密码、管理管理员列表；退出登录在右上角" />
+
       <PasswordCard />
 
       <div className={cardCls}>
-        <div className="border-b border-soft px-5 py-3.5">
+        <div className="border-b border-border-subtle px-5 py-3.5">
           <h3 className="text-[15px] font-semibold text-warm">管理员列表</h3>
           <p className="mt-0.5 text-[12px] text-warm-light">
             点击昵称可就地编辑；重置密码仅超级管理员可用；未迁移的管理员需先到「老用户迁移」完成邮箱绑定
@@ -291,7 +293,7 @@ export default function AdminAccount(): JSX.Element {
           <AdminEmpty text="还没有管理员账号" />
         ) : (
           <table className={tableCls}>
-            <thead className="border-b border-soft bg-soft/30">
+            <thead className="border-b border-border-subtle bg-soft/40">
               <tr>
                 <th className={thCls}>ID</th>
                 <th className={thCls}>手机号</th>
@@ -305,7 +307,7 @@ export default function AdminAccount(): JSX.Element {
             </thead>
             <tbody>
               {list.map((a) => (
-                <tr key={a.id} className="border-b border-soft/50 last:border-0">
+                <tr key={a.id} className="border-b border-border-subtle/60 last:border-0">
                   <td className={tdCls}>{a.id}</td>
                   <td className={tdCls}>{a.phone ?? '-'}</td>
                   <td className={tdCls}>{a.email ?? '-'}</td>
@@ -315,15 +317,10 @@ export default function AdminAccount(): JSX.Element {
                   <td className={tdCls}>{a.is_super === 1 ? '👑 超级管理员' : '管理员'}</td>
                   <td className={tdCls}>
                     {a.email ? (
-                      <span className="rounded-full bg-green-50 px-2 py-0.5 text-[12px] text-green-700">
-                        ✓ 已迁移
-                      </span>
+                      <StatusBadge kind="success" text="✓ 已迁移" />
                     ) : (
-                      <span
-                        className="rounded-full bg-amber-50 px-2 py-0.5 text-[12px] text-amber-700"
-                        title="该管理员尚未绑定邮箱，请到「老用户迁移」页完成绑定，否则无法通过 /admin 双因子登录"
-                      >
-                        ⚠ 未迁移 · 请先完成邮箱绑定
+                      <span title="该管理员尚未绑定邮箱，请到「老用户迁移」页完成绑定，否则无法通过 /admin 双因子登录">
+                        <StatusBadge kind="warning" text="⚠ 未迁移 · 请先绑定邮箱" />
                       </span>
                     )}
                   </td>
@@ -332,7 +329,7 @@ export default function AdminAccount(): JSX.Element {
                     {myIsSuper && (
                       <button
                         type="button"
-                        className="rounded-btn border border-soft px-3 py-1.5 text-[12px] text-warm active:bg-soft"
+                        className="rounded-md border border-border-subtle px-3 py-1.5 text-[12px] text-warm transition-colors hover:bg-soft"
                         onClick={() => setResetTarget(a)}
                       >
                         重置密码

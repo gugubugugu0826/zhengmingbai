@@ -1,0 +1,84 @@
+<view class="sd-page page-pad" wx:if="{{detail}}">
+  <view class="page-sub">{{typeLabel}} · 整理过 {{detail.session_count}} 次</view>
+
+  <!-- 前后对比 -->
+  <view class="card compare-card">
+    <view class="compare-title">整理前 vs 整理后</view>
+    <view class="compare-sub">
+      {{detail.after_photos.length > 0 ? '看看变化，给自己点个赞～' : '还没有整理后的照片。执行清单收尾时拍一张，就能在这里看到对比啦。'}}
+    </view>
+
+    <!-- 整理前 -->
+    <view class="compare-group">
+      <view class="compare-label-row">
+        <view class="tag">整理前</view>
+        <view class="compare-count">{{detail.photos.length}} 张</view>
+      </view>
+      <view class="photo-empty" wx:if="{{detail.photos.length === 0}}">还没有照片</view>
+      <scroll-view scroll-x class="photo-strip" wx:else>
+        <view class="photo-row">
+          <image
+            wx:for="{{detail.photos}}"
+            wx:key="index"
+            class="photo-item"
+            src="{{item}}"
+            mode="aspectFill"
+            data-url="{{item}}"
+            data-group="before"
+            bindtap="previewPhoto"
+          />
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 整理后 -->
+    <view class="compare-group">
+      <view class="compare-label-row">
+        <view class="tag tag-sage">整理后</view>
+        <view class="compare-count">{{detail.after_photos.length}} 张</view>
+      </view>
+      <view class="photo-empty" wx:if="{{detail.after_photos.length === 0}}">还没有照片</view>
+      <scroll-view scroll-x class="photo-strip" wx:else>
+        <view class="photo-row">
+          <image
+            wx:for="{{detail.after_photos}}"
+            wx:key="index"
+            class="photo-item"
+            src="{{item}}"
+            mode="aspectFill"
+            data-url="{{item}}"
+            data-group="after"
+            bindtap="previewPhoto"
+          />
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 整理记录时间线 -->
+  <view class="sec-title">整理记录</view>
+  <view wx:if="{{history === null}}" class="loading-box">正在翻记录…</view>
+  <view wx:elif="{{history.length === 0}}" class="empty-box">
+    <view>还没有整理记录</view>
+    <view class="empty-hint">去首页点「开始整理」来一次吧</view>
+  </view>
+  <view
+    wx:else
+    class="card record-card"
+    wx:for="{{history}}"
+    wx:key="id"
+    data-id="{{item.id}}"
+    data-status="{{item.status}}"
+    bindtap="openRecord"
+  >
+    <view class="record-date">{{item.dateText}}</view>
+    <view class="record-info">
+      <view class="record-title">{{item.granularityLabel}}整理 · {{item.photo_count}} 张照片</view>
+      <view class="record-meta">
+        {{item.statusLabel}}{{item.points_charged > 0 ? ' · 花了 ' + item.points_charged + ' 点' : ''}}
+      </view>
+    </view>
+    <view class="record-arrow">›</view>
+  </view>
+</view>
+<view class="loading-box" wx:else>正在打开空间…</view>

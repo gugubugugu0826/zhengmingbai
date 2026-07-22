@@ -1,10 +1,7 @@
 /**
- * webview 占位页（一期）
- *
- * 说明：完整的拍照 → AI 识别 → 入柜流程在一期复用 H5（zhengmingbai/web/）。
- * 小程序内通过 web-view 承载 H5 页面（真机需把 H5 域名配置为小程序「业务域名」）。
- * 开发工具里 localhost 无法作为业务域名校验，故默认展示说明文案，
- * 预留 web-view 组件，待 H5 部署到 https 域名后打开开关即可。
+ * webview 页（v3 保留，H5 备用承载）：
+ * - 默认展示小程序原生「隐私政策」（账号页入口，文案与 Web Privacy 页口径一致）
+ * - 当 H5 部署到已配置业务域名后，把 webviewEnabled 置为 true 即可内嵌打开完整 H5
  */
 const { H5_BASE } = require('../../utils/config');
 
@@ -16,10 +13,12 @@ Page({
     webviewUrl: '',
   },
 
-  onLoad() {
+  onLoad(options) {
     const token = getApp().globalData.token || wx.getStorageSync('token');
+    const page = options && options.page ? options.page : '';
+    const pagePath = page === 'privacy' ? '/privacy' : '';
     this.setData({
-      webviewUrl: `${H5_BASE}?from=miniprogram&token=${encodeURIComponent(token || '')}`,
+      webviewUrl: `${H5_BASE}${pagePath}?from=miniprogram&token=${encodeURIComponent(token || '')}`,
     });
   },
 });

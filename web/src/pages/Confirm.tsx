@@ -339,13 +339,13 @@ export default function ConfirmPage(): JSX.Element {
   // 新流程步骤 0：偏好选择（先选偏好再建会话）
   if (isNew && !session) {
     return (
-      <div className="flex min-h-full flex-1 flex-col pb-6">
-        <PageHeader title="你的偏好" onBack={() => navigate('/capture')} />
+      <div className="w-full max-w-3xl">
+        <PageHeader title="你的偏好" onBack={() => navigate('/capture')} back />
         <StepBar step={1} total={stepsTotal} />
-        <div className="flex-1 px-5 pt-2">
+        <div className="px-5 pt-2 md:px-0">
           <PreferencePicker value={prefs} onChange={setPrefs} rules={rules} />
         </div>
-        <div className="px-5 pt-6">
+        <div className="px-5 pt-6 md:px-0">
           <button
             type="button"
             disabled={busy || !outputValid}
@@ -370,7 +370,7 @@ export default function ConfirmPage(): JSX.Element {
   const renderGroups = (): JSX.Element => {
     if (!confirmResult) return <Loading text="AI 正在看照片…" />;
     return (
-      <div className="space-y-4 px-5">
+      <div className="grid gap-4 px-5 md:grid-cols-2 md:px-0">
         <div>
           <h2 className="text-[18px] font-semibold text-warm">我看到的范围</h2>
           <p className="mt-1 text-[13px] text-warm-light">
@@ -411,8 +411,8 @@ export default function ConfirmPage(): JSX.Element {
       );
     }
     return (
-      <div className="space-y-4 px-5">
-        <div>
+      <div className="grid gap-4 px-5 md:grid-cols-2 md:px-0">
+        <div className="md:col-span-2">
           <h2 className="text-[18px] font-semibold text-warm">这些是什么？</h2>
           <p className="mt-1 text-[13px] text-warm-light">有几样东西我没认出来，告诉我它是啥，方案会更准～</p>
         </div>
@@ -461,7 +461,7 @@ export default function ConfirmPage(): JSX.Element {
     if (stepIndex === 0) return renderGroups();
     if (stepIndex === 1) return renderVague();
     return (
-      <div className="px-5">
+      <div className="px-5 md:px-0">
         <h2 className="mb-3 text-[18px] font-semibold text-warm">你的偏好</h2>
         <PreferencePicker value={prefs} onChange={setPrefs} rules={rules} />
       </div>
@@ -472,11 +472,11 @@ export default function ConfirmPage(): JSX.Element {
   const shownStep = isNew ? stepIndex + 1 : stepIndex + 1;
 
   return (
-    <div className="flex min-h-full flex-1 flex-col pb-6">
-      <PageHeader title="AI 确认" />
+    <div className="w-full max-w-3xl">
+      <PageHeader title="AI 确认" subtitle="确认分组和偏好，AI 马上出方案" />
       <StepBar step={shownStep} total={stepsTotal} />
-      <div className="flex-1 pt-2">{renderStep()}</div>
-      <div className="px-5 pt-6">
+      <div className="pt-2">{renderStep()}</div>
+      <div className="px-5 pt-6 md:px-0">
         {isLastStep ? (
           <>
             <button

@@ -170,15 +170,15 @@ export default function CapturePage(): JSX.Element {
   };
 
   return (
-    <div className="flex min-h-full flex-1 flex-col pb-6">
-      <PageHeader title="开始整理" />
+    <div className="w-full max-w-4xl">
+      <PageHeader title="开始整理" subtitle="选空间、拍照片，AI 帮你出方案" />
       {showTips && <TipsOverlay onClose={closeTips} />}
 
       {/* 空间类型选择 */}
-      <div className="px-5">
+      <div className="px-5 pt-2 md:px-0">
         <h2 className="mb-1 text-[16px] font-semibold text-warm">要整理哪里？</h2>
         <p className="mb-3 text-[13px] text-warm-light">选一个空间类型，AI 会按它的习惯出方案</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3 md:grid-cols-5">
           {SPACE_CHOICES.map((choice) => (
             <button
               key={choice.type}
@@ -196,7 +196,7 @@ export default function CapturePage(): JSX.Element {
       </div>
 
       {/* 拍照 / 相册 */}
-      <div className="mt-6 px-5">
+      <div className="mt-6 px-5 md:px-0">
         <div className="mb-3 flex items-end justify-between">
           <div>
             <h2 className="text-[16px] font-semibold text-warm">拍几张照片</h2>
@@ -278,7 +278,7 @@ export default function CapturePage(): JSX.Element {
       </div>
 
       {/* R49 保留到我的家勾选（PRD 4.2：默认勾选、正向文案） */}
-      <div className="mt-6 px-5">
+      <div className="mt-6 px-5 md:px-0">
         <button
           type="button"
           className="flex w-full items-start gap-3 rounded-card bg-card p-4 text-left shadow-card"
@@ -303,11 +303,11 @@ export default function CapturePage(): JSX.Element {
       </div>
 
       {/* 提交 */}
-      <div className="mt-auto px-5 pt-6">
+      <div className="mt-8 px-5 md:px-0">
         <button
           type="button"
           disabled={photos.length === 0 || !spaceType}
-          className="w-full rounded-btn bg-primary py-4 text-[16px] font-semibold text-white shadow-card active:bg-primary-dark disabled:opacity-50"
+          className="w-full rounded-btn bg-primary py-4 text-[16px] font-semibold text-white shadow-card active:bg-primary-dark disabled:opacity-50 md:mx-auto md:block md:max-w-md"
           onClick={submit}
         >
           好了，下一步（{photos.length} 张）

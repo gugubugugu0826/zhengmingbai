@@ -226,6 +226,47 @@ export const SPACE_CHOICES: Array<{ type: string; label: string; emoji: string }
   { type: 'other', label: '其他', emoji: '🧺' },
 ];
 
+/* ================= v3 T02 增量 ================= */
+
+/** 照片类别：before=整理前（存量默认）/ after=整理后（前后对比存档） */
+export type PhotoKind = 'before' | 'after';
+
+/** 公开配置（GET /configs/public，无鉴权） */
+export interface PublicConfigs {
+  /** 小程序订阅消息模板 ID（空串 = 不展示授权引导） */
+  subscribe_template_id: string;
+  maintenance: {
+    enabled: boolean;
+    notice: string;
+  };
+}
+
+/** 忘记密码——发送邮箱验证码（scene=reset_password，弹窗图形码通过后才调用） */
+export interface EmailCodePayload {
+  email: string;
+  scene: 'register' | 'login' | 'reset_password' | 'change_email';
+  captcha_id: string;
+  captcha_code: string;
+}
+
+/** 忘记密码——重置（POST /auth/password-reset） */
+export interface PasswordResetPayload {
+  email: string;
+  code: string;
+  new_password: string;
+}
+
+/** after-photos 上传响应（POST /sessions/:id/after-photos） */
+export interface AfterPhotosResult {
+  photos: Array<{ id: number; url: string; kind: PhotoKind }>;
+}
+
+/** 空间详情响应增量：整理后照片（前后对比并排展示，T03 使用） */
+export interface SpaceDetailPhotos {
+  photos: string[];
+  after_photos: string[];
+}
+
 export const SESSION_STATUS_LABELS: Record<string, string> = {
   uploading: '照片上传中',
   confirming: '待确认',

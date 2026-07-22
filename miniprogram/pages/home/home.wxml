@@ -1,31 +1,156 @@
-<!-- 首页：问候语 + 开始整理 + 空间列表占位 -->
 <view class="home-page">
-  <view class="header">
-    <view class="greeting">你好，{{nickname}}</view>
-    <view class="sub-greeting">今天也让家里更清爽一点吧</view>
-    <view class="logout" bindtap="onLogout">退出登录</view>
+  <!-- 问候语 + 消息铃铛 -->
+  <view class="greet-row">
+    <view>
+      <view class="greet-title">{{greeting}}，{{nickname}}</view>
+      <view class="greet-sub">今天想把哪个角落整明白？</view>
+    </view>
+    <view class="bell" bindtap="goMessages">
+      🔔
+      <view class="bell-badge" wx:if="{{unread > 0}}">{{unread > 99 ? '99+' : unread}}</view>
+    </view>
   </view>
 
-  <button class="btn-primary start-btn" bindtap="onStartOrganize">
-    开始整理
-  </button>
-
-  <view class="section-title">我的空间</view>
-
-  <view wx:if="{{loading}}" class="placeholder card">
-    <view class="placeholder-text">空间加载中…</view>
+  <!-- AI 方案 Hero 卡 -->
+  <view class="hero">
+    <view class="hero-tag">AI 整理收纳助手</view>
+    <view class="hero-title">拍几张照片，让 AI 帮你出一份整理方案</view>
+    <view class="hero-desc">分好类、标好位置、排好步骤，照着做就行。</view>
+    <view class="hero-btn" bindtap="goCapture">📸 开始整理</view>
   </view>
 
-  <block wx:elif="{{spaces.length > 0}}">
-    <view class="card space-item" wx:for="{{spaces}}" wx:key="id">
-      <view class="space-name">{{item.name || '未命名空间'}}</view>
-      <view class="space-desc">{{item.session_count !== undefined ? item.session_count + ' 次整理' : ''}}</view>
+  <!-- 我的家 -->
+  <view class="section-head">
+    <view class="section-title">我的家</view>
+    <view class="section-more" bindtap="goSpaces">全部空间 ›</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-box">正在打开你的家…</view>
+
+  <view wx:elif="{{spaces.length === 0}}" class="empty-box">
+    <view class="empty-emoji">🏠</view>
+    <view>还没有空间档案</view>
+    <view class="empty-hint">点上方「开始整理」，从第一个房间开始吧</view>
+  </view>
+
+  <block wx:else>
+    <!-- 完成度总览 -->
+    <view class="card progress-card">
+      <view class="justify-between">
+        <view class="progress-text">
+          已有 <text class="progress-num">{{spaces.length}}</text> 个空间
+          · 累计整理 <text class="progress-num">{{totalSessions}}</text> 次
+        </view>
+        <view class="progress-emoji">🏡</view>
+      </view>
+      <view class="progress-bar">
+        <view
+          class="progress-fill"
+          style="width: {{spaces.length * 12 + totalSessions * 6 > 100 ? 100 : spaces.length * 12 + totalSessions * 6}}%"
+        ></view>
+      </view>
+      <view class="progress-hint">家是一点一点整明白的，继续保持～</view>
+    </view>
+
+    <!-- 空间卡片 -->
+    <view
+      class="card space-card"
+      wx:for="{{spaces}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="goSpaceDetail"
+    >
+      <view class="space-emoji">{{item.emoji}}</view>
+      <view class="space-info">
+        <view class="space-name ellipsis">{{item.name}}</view>
+        <view class="space-meta">{{item.typeLabel}} · {{item.lastTimeText}}</view>
+      </view>
+      <view class="space-count">{{item.session_count}} 次 ›</view>
     </view>
   </block>
 
-  <view wx:else class="placeholder card">
-    <view class="placeholder-icon">📦</view>
-    <view class="placeholder-text">还没有空间，去 H5 端创建你的第一个收纳空间吧</view>
-    <view wx:if="{{loadError}}" class="placeholder-error">{{loadError}}</view>
+  <!-- 点数卡 + 快捷入口 -->
+  <view class="side-grid">
+    <view class="card points-mini" bindtap="goPoints">
+      <view class="justify-between">
+        <view>
+          <view class="points-label">我的点数</view>
+          <view class="points-num">{{balance}}</view>
+        </view>
+        <view class="points-emoji">🪙</view>
+      </view>
+      <view class="points-hint">{{balance >= 10 ? '够做一次完整的整理啦～' : '快用完啦，联系管理员充点'}}</view>
+    </view>
+
+    <view class="card quick-card">
+      <view class="quick-title">快捷入口</view>
+      <view class="quick-grid">
+        <view class="quick-item" bindtap="goCapture">
+          <view class="quick-icon">📸</view>
+          <view class="quick-label">开始整理</view>
+        </view>
+        <view class="quick-item" bindtap="goSpaces">
+          <view class="quick-icon">🗂️</view>
+          <view class="quick-label">我的空间</view>
+        </view>
+        <view class="quick-item" bindtap="goMessages">
+          <view class="quick-icon">🔔</view>
+          <view class="quick-label">消息</view>
+        </view>
+        <view class="quick-item" bindtap="goAccount">
+          <view class="quick-icon">👤</view>
+          <view class="quick-label">账号</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 消息提醒面板 -->
+    <view class="card msg-card">
+      <view class="justify-between msg-head">
+        <view class="quick-title">
+          消息提醒
+          <text class="msg-badge" wx:if="{{unread > 0}}">{{unread > 99 ? '99+' : unread}}</text>
+        </view>
+        <view class="msg-more" bindtap="goMessages">全部 ›</view>
+      </view>
+      <view wx:if="{{messages.length === 0}}" class="msg-empty">
+        还没有消息
+        <view class="msg-empty-hint">整理完 30 天后，我会提醒你回去看看</view>
+      </view>
+      <view
+        wx:else
+        class="msg-item {{item.is_read === 0 ? 'msg-unread' : ''}}"
+        wx:for="{{messages}}"
+        wx:key="id"
+        bindtap="goMessages"
+      >
+        <view class="msg-title-row">
+          <view class="msg-title ellipsis">{{item.title}}</view>
+          <view class="dot-danger" wx:if="{{item.is_read === 0}}"></view>
+        </view>
+        <view class="msg-content">{{item.content}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 隐私政策弹窗（首次进入，不同意不能继续） -->
+  <view class="privacy-mask" wx:if="{{showPrivacy}}">
+    <view class="privacy-dialog" catchtap="noop">
+      <view class="privacy-title">隐私政策</view>
+      <view class="privacy-body">
+        <view class="privacy-p">在你开始使用「整明白」之前，请花一分钟了解我们如何对待你的照片：</view>
+        <view class="privacy-p">· 照片仅用于 AI 整理分析，不会用于其他任何用途；</view>
+        <view class="privacy-p">· 照片通过加密传输与签名链接访问，只有你自己看得到；</view>
+        <view class="privacy-p">· 你可以在设置中开启"分析完即删"，方案生成后照片立刻删除；</view>
+        <view class="privacy-p">· 任何时候都可以在"我的空间"里删除历史照片与记录。</view>
+        <view class="privacy-p privacy-light">你的东西你说了算，照片也一样。</view>
+      </view>
+      <view class="privacy-btns">
+        <view class="privacy-cancel" bindtap="onDisagreePrivacy">暂不使用</view>
+        <view class="privacy-agree {{agreeing ? 'privacy-agree-disabled' : ''}}" bindtap="onAgreePrivacy">
+          {{agreeing ? '请稍等…' : '同意并继续'}}
+        </view>
+      </view>
+    </view>
   </view>
 </view>
