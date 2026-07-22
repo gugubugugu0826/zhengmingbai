@@ -39,7 +39,12 @@ export function seedConfigs(): void {
     'ai.prompt.plan':
       '你是「整明白」整理助手。根据确认结果与分析结果，生成五部分整理方案：①温和的丢弃建议（明示"你说了算"）②分类归组清单 ③收纳位置+添置建议（只荐品类不带链接）④编号执行步骤 ⑤整理后场景描述。语气温暖，说人话。严格输出给定 JSON Schema。',
     'ai.prompt.t2i': '温馨手绘风格家居场景插画，暖色调，柔和光线：',
-    'reminder.template': '距离上次整理{{space_name}}已经 30 天啦，要不要去看看有没有变乱？',
+    // v3：对齐设计稿 30 天提醒口径（scanner 按 {{space_name}} 替换空间名）
+    'reminder.template': '整理完 30 天了，回去看看{{space_name}}保持得怎么样',
+    // ===== v3 增量种子（任务书 §5-H / §6 / 架构 §3.1，INSERT OR IGNORE 幂等） =====
+    'ops.registration_enabled': true, // 新用户注册开关（关闭后注册接口拒绝新注册）
+    'ops.maintenance': { enabled: false, notice: '系统维护中，请稍后再来' }, // 维护模式
+    'subscribe.template_id': '', // 小程序订阅消息模板 ID（老板后配，空=不展示授权引导）
   };
   const stmt = db.prepare(
     'INSERT OR IGNORE INTO configs (key, value_json, updated_by, updated_at) VALUES (?, ?, ?, ?)',
@@ -116,6 +121,33 @@ export function listConfigs(): Record<string, unknown> {
 
 export function getPointsRules(): PointsRules {
   return getConfig<PointsRules>('points.rules', DEFAULT_POINTS_RULES);
+}
+
+// ===================== v3 运营开关（任务书 §5-H，架构 §3.1） =====================
+
+/** 维护模式配置结构 */
+export interface MaintenanceConfig {
+  enabled: boolean;
+  notice: string;
+}
+
+/** 新用户注册开关（默认开；关闭时 /auth/register 与 /auth/wechat 新建分支拒绝，2107） */
+export function isRegistrationEnabled(): boolean {
+  return getConfig<boolean>('ops.registration_enabled', true) !== false;
+}
+
+/** 维护模式（默认关；开启后 maintenanceMiddleware 拦截全站，豁免 admin/configs/health） */
+export function getMaintenance(): MaintenanceConfig {
+  const value = getConfig<Partial<MaintenanceConfig>>('ops.maintenance', {});
+  return {
+    enabled: value?.enabled === true,
+    notice: typeof value?.notice === 'string' && value.notice ? value.notice : '系统维护中，请稍后再来',
+  };
+}
+
+/** 小程序订阅消息模板 ID（老板后配；空串 = 前端不展示授权引导） */
+export function getSubscribeTemplateId(): string {
+  return getConfig<string>('subscribe.template_id', '') || '';
 }
 
 export function isAiMock(): boolean {

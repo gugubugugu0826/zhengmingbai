@@ -1,12 +1,18 @@
 /**
- * 点数与套餐（R36/R32）：上半区点数规则表单（保存即时生效），下半区套餐管理表格（本期全下架置灰）。
+ * 点数套餐管理（R36/R32，v3 T04）：
+ * 上半区点数规则表单（保存即时生效）；
+ * 下半区套餐管理表格，按 v3 设计稿 p20 呈现新定价表数据：
+ *   体验包 ¥6/20点、家庭包 ⭐推荐 ¥25/100点、囤货包 ¥60/300点（上架中）；
+ *   装修包 ¥98/500点 is_active=0（已下架置灰行）。
+ * 数据由后端 v3 种子订正脚本幂等写入 packages 表，本页如实展示（推荐标徽、上下架状态徽标、
+ * 下架行整行置灰），编辑仅允许改名/改价/改点。
  */
 import { useCallback, useEffect, useState, type JSX } from 'react';
 import { api, ApiError } from '../../api';
 import { Loading } from '../../components/Loading';
 import { toast } from '../../stores/auth';
 import type { PackageRow } from '../api';
-import { AdminEmpty, btnPrimaryCls, cardCls, inputCls, tableCls, tdCls, thCls } from '../ui';
+import { AdminEmpty, btnPrimaryCls, cardCls, inputCls, PageTitle, StatusBadge, tableCls, tdCls, thCls } from '../ui';
 
 interface RulesForm {
   region: string;
@@ -18,6 +24,15 @@ interface RulesForm {
 
 function formatPrice(fen: number): string {
   return (fen / 100).toFixed(fen % 100 === 0 ? 0 : 1);
+}
+
+/** 套餐一句话描述（设计稿 p20 描述列口径） */
+function pkgDesc(pkg: PackageRow): string {
+  if (pkg.name.includes('体验')) return '约 2 次区域级方案，新客尝鲜';
+  if (pkg.name.includes('家庭')) return '约 10 次区域级 / 4 次物品级，主力套餐';
+  if (pkg.name.includes('囤货')) return '全屋多空间慢慢整，深度用户';
+  if (pkg.name.includes('装修')) return '适合刚搬家的重度整理';
+  return `${pkg.points} 点随心用`;
 }
 
 export default function AdminPointsPackages(): JSX.Element {
@@ -116,6 +131,8 @@ export default function AdminPointsPackages(): JSX.Element {
 
   return (
     <div className="space-y-5">
+      <PageTitle title="点数套餐" desc="新定价表已同步：体验包 ¥6/20点、家庭包 ⭐ ¥25/100点、囤货包 ¥60/300点" />
+
       {/* 点数规则 */}
       <div className={`${cardCls} p-5`}>
         <h2 className="mb-1 text-[15px] font-semibold text-warm">点数规则</h2>
@@ -123,27 +140,25 @@ export default function AdminPointsPackages(): JSX.Element {
         {!rules ? (
           <Loading />
         ) : (
-          <>
-            <div className="flex flex-wrap items-end gap-5">
-              {ruleField('区域级分析（点）', 'region')}
-              {ruleField('物品级分析（点）', 'item')}
-              {ruleField('重生成 · 保守档（点）', 'regenRegion')}
-              {ruleField('重生成 · 断舍离档（点）', 'regenItem')}
-              {ruleField('新用户赠送（点）', 'gift')}
-              <button type="button" disabled={saving} className={btnPrimaryCls} onClick={() => void saveRules()}>
-                {saving ? '保存中…' : '保存规则'}
-              </button>
-            </div>
-          </>
+          <div className="flex flex-wrap items-end gap-5">
+            {ruleField('区域级分析（点）', 'region')}
+            {ruleField('物品级分析（点）', 'item')}
+            {ruleField('重生成 · 保守档（点）', 'regenRegion')}
+            {ruleField('重生成 · 断舍离档（点）', 'regenItem')}
+            {ruleField('新用户赠送（点）', 'gift')}
+            <button type="button" disabled={saving} className={btnPrimaryCls} onClick={() => void saveRules()}>
+              {saving ? '保存中…' : '保存规则'}
+            </button>
+          </div>
         )}
       </div>
 
       {/* 套餐管理 */}
       <div className={cardCls}>
-        <div className="border-b border-soft px-5 py-3.5">
+        <div className="border-b border-border-subtle px-5 py-3.5">
           <h2 className="text-[15px] font-semibold text-warm">套餐管理</h2>
           <p className="mt-0.5 text-[12px] text-warm-light">
-            支付暂缓，本期全部套餐下架；恢复收费时可上架。
+            支付暂缓期，商城购买入口统一显示「暂未开放，联系管理员充点」；装修包建而不上架（is_active=0）。
           </p>
         </div>
         {!packages ? (
@@ -152,21 +167,26 @@ export default function AdminPointsPackages(): JSX.Element {
           <AdminEmpty text="还没有套餐数据" />
         ) : (
           <table className={tableCls}>
-            <thead className="border-b border-soft bg-soft/30">
+            <thead className="border-b border-border-subtle bg-soft/40">
               <tr>
-                <th className={thCls}>套餐名</th>
+                <th className={thCls}>套餐名称</th>
                 <th className={thCls}>点数</th>
                 <th className={thCls}>价格</th>
-                <th className={thCls}>标签</th>
-                <th className={thCls}>上下架</th>
-                <th className={`${thCls} w-40`}>操作</th>
+                <th className={thCls}>描述</th>
+                <th className={thCls}>状态</th>
+                <th className={`${thCls} w-32`}>操作</th>
               </tr>
             </thead>
             <tbody>
               {packages.map((pkg) => {
                 const editing = editingPkgId === pkg.id;
+                const offShelf = pkg.is_active !== 1;
+                const recommended = Boolean(pkg.tag?.includes('推荐'));
                 return (
-                  <tr key={pkg.id} className="border-b border-soft/50 last:border-0">
+                  <tr
+                    key={pkg.id}
+                    className={`border-b border-border-subtle/60 last:border-0 ${offShelf ? 'opacity-50' : ''}`}
+                  >
                     <td className={tdCls}>
                       {editing ? (
                         <input
@@ -175,7 +195,11 @@ export default function AdminPointsPackages(): JSX.Element {
                           onChange={(e) => setPkgForm((s) => ({ ...s, name: e.target.value }))}
                         />
                       ) : (
-                        pkg.name
+                        <span className="font-medium">
+                          {pkg.name}
+                          {recommended ? ' ⭐' : ''}
+                          {offShelf ? '（已下架）' : ''}
+                        </span>
                       )}
                     </td>
                     <td className={tdCls}>
@@ -187,7 +211,7 @@ export default function AdminPointsPackages(): JSX.Element {
                           onChange={(e) => setPkgForm((s) => ({ ...s, points: e.target.value }))}
                         />
                       ) : (
-                        pkg.points
+                        `${pkg.points} 点`
                       )}
                     </td>
                     <td className={tdCls}>
@@ -203,31 +227,30 @@ export default function AdminPointsPackages(): JSX.Element {
                         `¥${formatPrice(pkg.price_fen)}`
                       )}
                     </td>
-                    <td className={tdCls}>{pkg.tag ?? '-'}</td>
+                    <td className={`${tdCls} max-w-[260px] text-warm-light`}>{pkgDesc(pkg)}</td>
                     <td className={tdCls}>
-                      {/* 本期全部下架置灰（R32/PRD 3.2） */}
-                      <button
-                        type="button"
-                        disabled
-                        title="支付暂缓，恢复收费时可上架"
-                        className="cursor-not-allowed rounded-tag bg-soft px-2.5 py-1 text-[11px] text-warm-light opacity-70"
-                      >
-                        已下架 · 恢复收费时可上架
-                      </button>
+                      {offShelf ? (
+                        <StatusBadge kind="danger" text="已下架" />
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5">
+                          <StatusBadge kind="success" text="上架中" />
+                          {recommended ? <StatusBadge kind="warning" text="推荐" /> : null}
+                        </span>
+                      )}
                     </td>
                     <td className={tdCls}>
                       {editing ? (
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            className="rounded-btn bg-primary px-3 py-1.5 text-[12px] text-white"
+                            className="rounded-md bg-primary px-3 py-1.5 text-[12px] text-white transition-colors hover:bg-primary-dark"
                             onClick={() => void savePackage(pkg)}
                           >
                             保存
                           </button>
                           <button
                             type="button"
-                            className="rounded-btn border border-soft px-3 py-1.5 text-[12px] text-warm-light"
+                            className="rounded-md border border-border-subtle px-3 py-1.5 text-[12px] text-warm-light transition-colors hover:bg-soft"
                             onClick={() => setEditingPkgId(null)}
                           >
                             取消
@@ -236,7 +259,7 @@ export default function AdminPointsPackages(): JSX.Element {
                       ) : (
                         <button
                           type="button"
-                          className="rounded-btn border border-soft px-3 py-1.5 text-[12px] text-warm active:bg-soft"
+                          className="rounded-md border border-border-subtle px-3 py-1.5 text-[12px] text-warm transition-colors hover:bg-soft"
                           onClick={() => {
                             setEditingPkgId(pkg.id);
                             setPkgForm({ name: pkg.name, price: formatPrice(pkg.price_fen), points: String(pkg.points) });

@@ -8,6 +8,7 @@ import { migrate } from './db.js';
 import { config } from './config.js';
 import { logger } from './common/logger.js';
 import { globalLimiter } from './middleware/rateLimit.js';
+import { maintenanceMiddleware } from './middleware/maintenance.js';
 import { authMiddleware } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authRouter } from './modules/auth/routes.js';
@@ -18,7 +19,7 @@ import { filesRouter } from './modules/upload/routes.js';
 import { plansRouter } from './modules/plans/routes.js';
 import { pointsRouter } from './modules/points/routes.js';
 import { ordersRouter } from './modules/orders/routes.js';
-import { configsRouter } from './modules/configs/routes.js';
+import { configsRouter, publicConfigsRouter } from './modules/configs/routes.js';
 import { knowledgeRouter } from './modules/knowledge/routes.js';
 import { shareRouter, illustrationsRouter } from './modules/share/routes.js';
 import { messagesRouter } from './modules/messages/routes.js';
@@ -42,6 +43,9 @@ app.use(express.json({ limit: '60mb' }));
 
 app.use(globalLimiter);
 
+// v3：维护模式（globalLimiter 之后、JWT 之前全站生效；豁免 health/admin/configs）
+app.use(maintenanceMiddleware);
+
 /** 健康检查（无需鉴权） */
 app.get('/health', (_req, res) => {
   res.json({ code: 0, data: { ok: true }, message: 'ok' });
@@ -57,6 +61,8 @@ app.use('/api/v1/admin/auth', adminAuthRouter);
 app.use('/api/v1/files', filesRouter);
 // 插画素材为静态资源，公开可读
 app.use('/api/v1/illustrations', illustrationsRouter);
+// v3：公开配置只读（订阅模板 ID / 维护公告；无鉴权，白名单 key）
+app.use('/api/v1/configs', publicConfigsRouter);
 
 // 其余全部需要登录
 app.use('/api/v1', authMiddleware);

@@ -1,73 +1,147 @@
 /**
- * 首页（一期骨架）
- *
- * - 顶部问候语（昵称 / 手机号）
- * - 「开始整理」大按钮 → 跳转 webview 占位页（完整拍照/整理流程复用 H5，二期小程序原生实现）
- * - 空间列表占位：调 GET /spaces；接口未就绪或为空时展示占位文案
+ * 首页（v3，对齐 Web Home 页）：
+ * 问候语 + AI 方案 Hero 卡 + 我的家完成度卡 + 快捷入口 + 消息提醒面板。
+ * 首次进入（privacy_agreed=false）弹隐私政策，不同意退出到登录页。
  */
 const request = require('../../utils/request');
+const { ensureLogin } = require('../../utils/auth');
+const { spaceEmoji, formatLastTime, SPACE_TYPE_LABELS } = require('../../utils/constants');
 
 Page({
   data: {
     nickname: '朋友',
-    spaces: [],
+    balance: 0,
+    spaces: null,
+    totalSessions: 0,
+    unread: 0,
+    messages: [],
     loading: true,
-    loadError: '',
+    // 隐私政策弹窗
+    showPrivacy: false,
+    agreeing: false,
+    // 问候语
+    greeting: '你好',
   },
 
   onShow() {
-    // 未登录兜底：回登录页
-    const token = getApp().globalData.token || wx.getStorageSync('token');
-    if (!token) {
-      wx.reLaunch({ url: '/pages/login/login' });
-      return;
-    }
+    if (!ensureLogin()) return;
 
-    const userInfo = getApp().globalData.userInfo || wx.getStorageSync('userInfo');
+    const app = getApp();
+    const userInfo = app.globalData.userInfo || wx.getStorageSync('userInfo');
+    const hour = new Date().getHours();
     this.setData({
-      nickname: (userInfo && (userInfo.nickname || userInfo.phone)) || '朋友',
+      nickname: (userInfo && (userInfo.nickname || userInfo.username || userInfo.phone)) || '朋友',
+      balance: app.globalData.balance || 0,
+      greeting: hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好',
+      showPrivacy: !!(userInfo && userInfo.privacy_agreed === false),
     });
 
-    this.loadSpaces();
+    // 首次注册赠点提示（只弹一次，storage 记忆）
+    if (userInfo && userInfo.is_new_gift_used === 1 && wx.getStorageSync('gift_toast_shown') !== '1') {
+      wx.setStorageSync('gift_toast_shown', '1');
+      wx.showToast({
+        title: '欢迎！已送你 20 点，先去拍一张试试～',
+        icon: 'none',
+        duration: 3000,
+      });
+    }
+
+    this.loadAll();
   },
 
-  /**
-   * 拉取空间列表。后端未实现该接口时优雅降级为占位文案，不阻塞骨架演示。
-   */
-  async loadSpaces() {
-    this.setData({ loading: true, loadError: '' });
+  async loadAll() {
+    this.setData({ loading: true });
     try {
-      const data = await request.get('/spaces');
-      // 兼容两种返回形态：数组 或 { list: [] }
-      const list = Array.isArray(data) ? data : ((data && data.list) || []);
-      this.setData({ spaces: list, loading: false });
-    } catch (e) {
+      const spaces = await request.get('/spaces');
+      const list = Array.isArray(spaces) ? spaces : [];
       this.setData({
-        spaces: [],
+        spaces: list.map((s) => ({
+          ...s,
+          emoji: spaceEmoji(s.space_type),
+          typeLabel: SPACE_TYPE_LABELS[s.space_type] || '空间',
+          lastTimeText: formatLastTime(s.last_session_at),
+        })),
+        totalSessions: list.reduce((sum, s) => sum + (s.session_count || 0), 0),
         loading: false,
-        loadError: (e && e.message) || '空间列表加载失败',
       });
+    } catch (e) {
+      this.setData({ spaces: [], loading: false });
+      request.toastError(e, '空间列表加载失败');
+    }
+    // 未读数与最近消息失败不阻塞首页
+    request
+      .get('/messages/unread-count')
+      .then((d) => this.setData({ unread: d.count || 0 }))
+      .catch(() => undefined);
+    request
+      .get('/messages')
+      .then((list) => this.setData({ messages: (Array.isArray(list) ? list : []).slice(0, 3) }))
+      .catch(() => undefined);
+    // 余额刷新
+    request
+      .get('/points/balance')
+      .then((d) => {
+        this.setData({ balance: d.balance });
+        getApp().globalData.balance = d.balance;
+      })
+      .catch(() => undefined);
+  },
+
+  onPullDownRefresh() {
+    this.loadAll().finally(() => {
+      wx.stopPullDownRefresh();
+    });
+  },
+
+  /* ============ 隐私政策弹窗 ============ */
+
+  async onAgreePrivacy() {
+    if (this.data.agreeing) return;
+    this.setData({ agreeing: true });
+    try {
+      await request.post('/auth/privacy/agree');
+      const app = getApp();
+      const userInfo = { ...(app.globalData.userInfo || {}), privacy_agreed: true };
+      app.globalData.userInfo = userInfo;
+      wx.setStorageSync('userInfo', userInfo);
+      this.setData({ showPrivacy: false });
+      wx.showToast({ title: '感谢信任，我们会好好保护你的照片', icon: 'none', duration: 2000 });
+    } catch (e) {
+      request.toastError(e, '操作失败，请稍后再试');
+    } finally {
+      this.setData({ agreeing: false });
     }
   },
 
-  /**
-   * 「开始整理」：一期跳 webview 占位页，说明完整流程在 H5 体验。
-   */
-  onStartOrganize() {
-    wx.navigateTo({ url: '/pages/webview/webview' });
-  },
-
-  /**
-   * 退出登录。
-   */
-  onLogout() {
+  onDisagreePrivacy() {
     getApp().clearSession();
     wx.reLaunch({ url: '/pages/login/login' });
   },
 
-  onPullDownRefresh() {
-    this.loadSpaces().finally(() => {
-      wx.stopPullDownRefresh();
-    });
+  /* ============ 跳转 ============ */
+
+  goCapture() {
+    wx.navigateTo({ url: '/pages/capture/capture' });
+  },
+
+  goSpaces() {
+    wx.switchTab({ url: '/pages/spaces/spaces' });
+  },
+
+  goAccount() {
+    wx.switchTab({ url: '/pages/account/account' });
+  },
+
+  goPoints() {
+    wx.navigateTo({ url: '/pages/points/points' });
+  },
+
+  goMessages() {
+    wx.navigateTo({ url: '/pages/messages/messages' });
+  },
+
+  goSpaceDetail(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/space-detail/space-detail?id=${id}` });
   },
 });

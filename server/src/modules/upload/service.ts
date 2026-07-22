@@ -16,6 +16,8 @@ export interface PhotoRow {
   taken_order: number;
   mime: string | null;
   size_bytes: number;
+  /** v3：'before'（默认，整理前）/ 'after'（整理后拍照存档） */
+  kind?: string;
 }
 
 export function countSessionPhotos(sessionId: number): number {

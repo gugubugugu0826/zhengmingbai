@@ -22,8 +22,9 @@ export interface AdminUserListQuery {
 }
 
 export function listUsers(q: AdminUserListQuery): { list: unknown[]; total: number } {
-  const where = q.phone ? `WHERE u.phone LIKE ?` : '';
-  const params: unknown[] = q.phone ? [`%${q.phone}%`] : [];
+  // T04 遗留修复：搜索框同时匹配手机号与邮箱（运营按邮箱找用户是高频场景）
+  const where = q.phone ? `WHERE (u.phone LIKE ? OR u.email LIKE ?)` : '';
+  const params: unknown[] = q.phone ? [`%${q.phone}%`, `%${q.phone}%`] : [];
   const sortCol =
     q.sort === 'spent'
       ? 'COALESCE(pa.total_spent, 0)'

@@ -17,7 +17,10 @@ import { signToken } from '../../middleware/auth.js';
 import { changeBalance, ensureAccount } from '../points/service.js';
 import { getPointsRules } from '../configs/service.js';
 import { hashPassword, verifyPassword } from './password.js';
-import { verifyEmailCode } from './verification/email-verification.service.js';
+import {
+  verifyEmailCode,
+  EMAIL_CODE_INVALID,
+} from './verification/email-verification.service.js';
 
 export interface UserRow {
   id: number;
@@ -190,6 +193,32 @@ function loginByPhonePassword(phone: string, password: string): AuthResult {
   if (!verifyPassword(password, user.password_hash)) return failLogin(password);
   maybePromoteAdmin(user);
   return toAuthResult(user);
+}
+
+// ===================== 忘记密码（v3，任务书 §5-C / 架构 §3.2） =====================
+
+/**
+ * 邮箱验证码重置密码：
+ * - 防枚举：邮箱未注册统一抛 2102（与"验证码错误或已过期"同文案，不暴露是否注册）
+ * - 验证码一次性（verifyEmailCode 成功即作废）；旧密码立即失效（password_hash 覆盖天然生效）
+ * - 密码强度由路由层前置校验（password-policy 同规则）；此处写审计日志（不含明文密码）
+ */
+export function resetPasswordByEmail(email: string, code: string, newPassword: string): void {
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRow | undefined;
+  if (!user) {
+    // 防枚举：与验证码错误同错误码同文案（不跑真实 verify，避免侧信道差异之外的语义泄露）
+    throw new BizError(EMAIL_CODE_INVALID, '邮箱验证码错误或已过期', 400);
+  }
+  // 验码一次性（scene=reset_password）；失败抛 2102
+  verifyEmailCode(email, code, 'reset_password');
+  db.prepare(
+    `UPDATE users SET password_hash = ?, force_password_reset = 0, updated_at = ? WHERE id = ?`,
+  ).run(hashPassword(newPassword), nowIso(), user.id);
+  // 审计日志：谁（自助重置=本人）对什么账号做了什么；detail 不落任何敏感信息
+  db.prepare(
+    `INSERT INTO admin_logs (admin_user_id, action, target, detail_json, created_at, updated_at)
+     VALUES (?, 'user_password_reset', ?, '{}', ?, ?)`,
+  ).run(user.id, `user:${user.id}`, nowIso(), nowIso());
 }
 
 // ===================== 查重（注册/改绑失焦校验，登录链路禁止调用） =====================

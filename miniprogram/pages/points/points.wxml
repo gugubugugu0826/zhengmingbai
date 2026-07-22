@@ -1,0 +1,46 @@
+<view class="points-page page-pad">
+  <!-- 余额卡片 -->
+  <view class="balance-card">
+    <view class="balance-label">当前点数余额</view>
+    <view class="balance-num">{{balance}}</view>
+    <view class="balance-desc">
+      你还有 {{balance}} 点，{{enough ? '够做一次完整的整理啦～' : '快用完啦'}}
+    </view>
+  </view>
+
+  <!-- 点数用途 -->
+  <view class="usage-grid">
+    <view class="card usage-card">
+      <view class="usage-title">🔍 区域级分析 · 10 点/次</view>
+      <view class="usage-desc">按区域出整理方案，够用好上手</view>
+    </view>
+    <view class="card usage-card">
+      <view class="usage-title">🔬 物品级分析 · 25 点/次</view>
+      <view class="usage-desc">细到每件物品，方案更精准</view>
+    </view>
+  </view>
+
+  <!-- 获取点数（不放充值入口，点数只能管理员发放） -->
+  <view class="card get-card">
+    <view class="get-emoji">🙋</view>
+    <view class="get-title">点数不够了？</view>
+    <view class="get-desc">现在点数由小助手人工发放，联系管理员就能补上～</view>
+    <view class="get-tip">商城支付暂未开放，请联系管理员充点</view>
+  </view>
+
+  <!-- 点数流水 -->
+  <view class="group-title">点数流水</view>
+  <view wx:if="{{transactions.length === 0}}" class="empty-box">
+    <view>还没有点数变动记录</view>
+  </view>
+  <view wx:else class="card tx-card" wx:for="{{transactions}}" wx:key="id">
+    <view class="tx-info">
+      <view class="tx-reason">{{item.reason}}</view>
+      <view class="tx-time">{{item.timeText}}</view>
+    </view>
+    <view class="tx-amount {{item.positive ? 'tx-positive' : 'tx-negative'}}">{{item.amountText}}</view>
+  </view>
+  <view class="load-more" wx:if="{{hasMore}}" bindtap="onLoadMore">
+    {{loadingMore ? '加载中…' : '加载更多'}}
+  </view>
+</view>

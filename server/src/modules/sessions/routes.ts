@@ -6,10 +6,11 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { ok } from '../../common/response.js';
 import { BizError } from '../../common/errors.js';
+import { ERR_NOT_IMPLEMENTED } from '../../common/messages.js';
 import type { AuthRequest } from '../../middleware/auth.js';
 import { sensitiveLimiter } from '../../middleware/rateLimit.js';
 import { db, nowIso } from '../../db.js';
-import { getOwnedSession, type SessionRow } from './service.js';
+import { getOwnedSession, saveAfterPhotos, MAX_AFTER_PHOTOS, type SessionRow } from './service.js';
 import { getSpace } from '../spaces/service.js';
 import {
   countSessionPhotos,
@@ -133,6 +134,34 @@ sessionsRouter.post('/:id/photos', sensitiveLimiter, async (req: AuthRequest, re
 sessionsRouter.delete('/:id/photos/:photoId', (req: AuthRequest, res) => {
   getOwnedSession(req.userId!, Number(req.params.id));
   deletePhotoHandler(req, res);
+});
+
+// ===================== v3：整理前后对比（任务书 §5-F，架构 §3.3③④） =====================
+
+const afterPhotosSchema = z.object({
+  photos: z.array(z.string().min(32)).min(1).max(MAX_AFTER_PHOTOS),
+});
+
+/** POST /sessions/:id/after-photos — 上传"整理后"照片（kind='after' 存空间档案，≤9 张） */
+sessionsRouter.post('/:id/after-photos', sensitiveLimiter, async (req: AuthRequest, res, next) => {
+  try {
+    const session = getOwnedSession(req.userId!, Number(req.params.id));
+    const { photos } = afterPhotosSchema.parse(req.body);
+    const saved = await saveAfterPhotos(req.userId!, session.id, photos);
+    ok(res, { photos: withSignedUrls(saved) }, '整理后的照片已存到我的家');
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** POST /sessions/:id/compare — AI 对比口子（本期恒 501，文案不承诺 AI） */
+sessionsRouter.post('/:id/compare', (req: AuthRequest, res) => {
+  getOwnedSession(req.userId!, Number(req.params.id));
+  res.status(501).json({
+    code: ERR_NOT_IMPLEMENTED,
+    data: null,
+    message: 'AI 对比功能筹备中，先自己拍照对比看看吧',
+  });
 });
 
 /** POST /sessions/:id/confirm/run — AI 确认：空间分组猜测 + 模糊物品提问 */

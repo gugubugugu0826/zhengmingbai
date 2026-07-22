@@ -1,17 +1,15 @@
-<!-- webview 占位页：一期说明 + 预留 web-view 组件 -->
+<!-- H5 备用承载（业务域名配置后启用） -->
 <web-view wx:if="{{webviewEnabled}}" src="{{webviewUrl}}"></web-view>
 
-<view wx:else class="webview-placeholder">
-  <view class="card info-card">
-    <view class="info-icon">🧺</view>
-    <view class="info-title">完整流程请在 H5 体验</view>
-    <view class="info-desc">
-      拍照识别、AI 整理建议、入柜等完整流程一期在 H5 端提供。
-      小程序原生页面将于二期开发（或复用 H5 通过 web-view 承载）。
-    </view>
-    <view class="info-note">
-      当前为骨架占位页：H5 部署到 https 域名并在小程序后台配置业务域名后，
-      将本页 webviewEnabled 置为 true 即可内嵌打开。
-    </view>
-  </view>
+<!-- 默认：原生隐私政策（与 Web Privacy 页口径一致） -->
+<view wx:else class="privacy-page">
+  <view class="privacy-p privacy-lead">在你使用「整明白」之前，我们想坦诚说明一下照片的去向：</view>
+  <view class="privacy-p">· 照片仅用于 AI 整理分析，不会用于其他任何用途；</view>
+  <view class="privacy-p">· 照片通过加密传输与签名链接访问，只有你自己看得到；</view>
+  <view class="privacy-p">· 你可以在账号页开启「默认保留整理记录」的反面 —— 分析完即删，方案生成后照片立刻删除；</view>
+  <view class="privacy-p">· 任何时候都可以在「我的空间」里删除历史照片与记录；</view>
+  <view class="privacy-p">· 我们不会把你的照片、整理记录卖给任何第三方；</view>
+  <view class="privacy-p">· 你注册的邮箱、手机号仅用于登录与找回账号，不会收到任何营销推送。</view>
+  <view class="privacy-p privacy-light">你的东西你说了算，照片也一样。</view>
+  <view class="privacy-date">最后更新：2026-07-22</view>
 </view>

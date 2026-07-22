@@ -1,8 +1,8 @@
 {
-  "desc": "整明白小程序页面索引配置（一期骨架不对外被索引）",
+  "description": "整明白小程序页面索引",
   "rules": [
     {
-      "action": "disallow",
+      "action": "allow",
       "page": "*"
     }
   ]

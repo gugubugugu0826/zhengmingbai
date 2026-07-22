@@ -1,5 +1,4 @@
 {
   "navigationBarTitleText": "整明白",
-  "enablePullDownRefresh": true,
-  "usingComponents": {}
+  "enablePullDownRefresh": true
 }

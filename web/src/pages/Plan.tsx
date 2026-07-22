@@ -472,9 +472,10 @@ export default function PlanPage(): JSX.Element {
   };
 
   return (
-    <div className="flex min-h-full flex-1 flex-col pb-32">
+    <div className="w-full max-w-4xl pb-20 md:pb-6">
       <PageHeader
         title="整理方案"
+        subtitle="不合适的地方写反馈修改，满意了就生成最终方案"
         onBack={() => navigate('/home')}
         right={
           <button type="button" aria-label="分享" className="text-lg" onClick={() => setShowShare(true)}>
@@ -484,7 +485,7 @@ export default function PlanPage(): JSX.Element {
       />
 
       {/* 示意插画（高阶文生图：t2i_image_url 优先，空则素材图） */}
-      <div className="px-5">
+      <div className="px-5 md:px-0">
         <div className="overflow-hidden rounded-card bg-card shadow-card">
           {t2iGenerating ? (
             <div className="flex h-44 flex-col items-center justify-center gap-2 bg-soft">
@@ -552,10 +553,10 @@ export default function PlanPage(): JSX.Element {
 
       {/* ① 丢弃建议 */}
       {discardItems.length > 0 && (
-        <section className="mt-6 px-5">
+        <section className="mt-6 px-5 md:px-0">
           <h2 className="mb-1 text-[16px] font-semibold text-warm">① 这些东西可能用不上了</h2>
           <p className="mb-3 text-[13px] text-warm-light">不过你说了算。</p>
-          <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
             {discardItems.map((item) => (
               <DiscardItem key={item.id} item={item} onChanged={() => void load()} />
             ))}
@@ -564,9 +565,9 @@ export default function PlanPage(): JSX.Element {
       )}
 
       {/* ② 分类归组清单 */}
-      <section className="mt-6 px-5">
+      <section className="mt-6 px-5 md:px-0">
         <h2 className="mb-3 text-[16px] font-semibold text-warm">② 分类归组</h2>
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2 desktop:grid-cols-3">
           {content.groups.map((group, idx) => (
             <div key={idx} className="rounded-card bg-card p-4 shadow-card">
               <div className="mb-1 flex items-center justify-between">
@@ -582,9 +583,9 @@ export default function PlanPage(): JSX.Element {
       </section>
 
       {/* ③ 收纳位置 + 添置建议 */}
-      <section className="mt-6 px-5">
+      <section className="mt-6 px-5 md:px-0">
         <h2 className="mb-3 text-[16px] font-semibold text-warm">③ 放在哪儿 &amp; 添点什么</h2>
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2">
           {content.storage_advice.map((advice, idx) => (
             <div key={`s-${idx}`} className="rounded-card bg-card p-4 shadow-card">
               <div className="text-[14px] font-medium text-warm">
@@ -603,10 +604,10 @@ export default function PlanPage(): JSX.Element {
       </section>
 
       {/* ④ 编号步骤 */}
-      <section className="mt-6 px-5">
+      <section className="mt-6 px-5 md:px-0">
         <h2 className="mb-1 text-[16px] font-semibold text-warm">④ 照着做就行</h2>
         <p className="mb-3 text-[13px] text-warm-light">别担心，一步一步来。</p>
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2">
           {content.steps
             .slice()
             .sort((a, b) => a.no - b.no)
@@ -628,9 +629,9 @@ export default function PlanPage(): JSX.Element {
 
       {/* ⑤ 照片标注（选了 C 才展示） */}
       {showAnnotation && (
-        <section className="mt-6 px-5">
+        <section className="mt-6 px-5 md:px-0">
           <h2 className="mb-3 text-[16px] font-semibold text-warm">⑤ 照片标注</h2>
-          <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2 desktop:grid-cols-3">
             {session.photos.map((photo) => (
               <div key={photo.id} className="overflow-hidden rounded-card bg-card shadow-card">
                 <img src={photo.url} alt="标注照片" className="w-full object-cover" />
@@ -649,7 +650,7 @@ export default function PlanPage(): JSX.Element {
       )}
 
       {/* 找人帮我整理 */}
-      <div className="mt-6 px-5">
+      <div className="mt-6 px-5 md:px-0">
         <button
           type="button"
           className="w-full rounded-btn border border-primary/50 bg-card py-3 text-[14px] text-primary-dark active:bg-soft"
@@ -659,8 +660,8 @@ export default function PlanPage(): JSX.Element {
         </button>
       </div>
 
-      {/* 底部固定栏 */}
-      <div className="fixed bottom-0 left-1/2 z-30 w-full max-w-md -translate-x-1/2 border-t border-soft bg-card/95 px-5 py-3 backdrop-blur">
+      {/* 底部固定栏：手机档固定底部；平板/桌面档页内操作条 */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-soft bg-card/95 px-5 py-3 backdrop-blur md:static md:mx-0 md:mt-8 md:rounded-card md:border md:bg-card md:shadow-card">
         {regenerating && (
           <div className="mb-2 flex items-center justify-center gap-2 text-[13px] text-warm-light">
             <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />

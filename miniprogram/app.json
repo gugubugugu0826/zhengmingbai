@@ -1,15 +1,50 @@
 {
   "pages": [
-    "pages/login/login",
     "pages/home/home",
+    "pages/login/login",
+    "pages/forgot-password/forgot-password",
+    "pages/capture/capture",
+    "pages/confirm/confirm",
+    "pages/plan/plan",
+    "pages/todo/todo",
+    "pages/spaces/spaces",
+    "pages/space-detail/space-detail",
+    "pages/account/account",
+    "pages/points/points",
+    "pages/messages/messages",
     "pages/webview/webview"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#FAF6F0",
+    "navigationBarBackgroundColor": "#FAF6EE",
     "navigationBarTitleText": "整明白",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#FAF6F0",
+    "backgroundColor": "#FAF6EE",
     "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#8A8076",
+    "selectedColor": "#B08968",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/spaces/spaces",
+        "text": "我的空间"
+      },
+      {
+        "pagePath": "pages/account/account",
+        "text": "账号"
+      }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于附近收纳服务推荐"
+    }
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

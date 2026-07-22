@@ -1,9 +1,9 @@
 /**
- * 老用户迁移管理页（v2.2 T04，PRD A-5）：
- * - 列表：仅未迁移用户（email IS NULL），列为 用户ID/原手机号(脱敏)/注册时间/空间数/方案数/操作
- * - 「绑定邮箱」弹窗：邮箱 + 用户名（服务端即时查重 2105/2106）→ 确认后服务端生成
- *   10 位临时密码并置 force_password_reset=1，明文仅随响应返回一次，大字醒目展示
- * - 绑定成功后该用户从列表消失（自动刷新）
+ * 老用户迁移（v2.2 T04 沿用，v3 T04 换皮）：
+ * - 列表：仅未迁移用户（email IS NULL），列为 用户/登录方式/注册时间/空间数/方案数/操作
+ * - 「绑定邮箱」弹窗：邮箱 + 用户名（服务端即时查重 2105/2106）→ 服务端生成 10 位临时密码
+ *   并置 force_password_reset=1，明文仅随响应返回一次，大字醒目展示
+ * - 绑定成功后 SES 54719 迁移通知模板（变量 {{password}}）由后端发送，前端无需处理
  * - 顶部醒目迁移窗口期提示 + 当前未迁移用户数
  */
 import { useCallback, useEffect, useState, type JSX } from 'react';
@@ -11,7 +11,7 @@ import { api, ApiError } from '../../api';
 import { Loading } from '../../components/Loading';
 import { toast } from '../../stores/auth';
 import { fmtTime } from '../api';
-import { AdminEmpty, AdminModal, btnGhostCls, btnPrimaryCls, cardCls, inputCls, tableCls, tdCls, thCls } from '../ui';
+import { AdminEmpty, AdminModal, btnGhostCls, btnPrimaryCls, cardCls, inputCls, PageTitle, tableCls, tdCls, thCls } from '../ui';
 
 export interface LegacyUserRow {
   id: number;
@@ -87,7 +87,7 @@ function BindModal({
           <p className="text-[13px] text-warm-light">
             为该老用户设置登录邮箱与用户名。提交后系统将生成
             <span className="font-medium text-warm"> 10 位临时密码</span>
-            ，用户首次登录会被强制要求改密。
+            ，并通过邮件通知用户；首次登录会被强制要求改密。
           </p>
           <div>
             <div className="mb-1.5 text-[13px] font-medium text-warm">邮箱（必填）</div>
@@ -128,16 +128,16 @@ function BindModal({
         </div>
       ) : (
         <div className="space-y-4 text-center">
-          <div className="rounded-btn bg-primary/5 px-3 py-2 text-left text-[12px] text-warm-light">
+          <div className="rounded-md bg-primary/5 px-3 py-2 text-left text-[12px] text-warm-light">
             <div>邮箱：<span className="font-medium text-warm">{result.email}</span></div>
             <div>用户名：<span className="font-medium text-warm">{result.username}</span></div>
           </div>
           <p className="text-[13px] text-warm-light">临时密码（只显示这一次，请截图/抄录）：</p>
-          <div className="select-all rounded-btn border-2 border-primary/40 bg-primary/5 py-4 text-[26px] font-semibold tracking-[0.15em] text-primary-dark">
+          <div className="select-all rounded-md border-2 border-primary/40 bg-primary/5 py-4 text-[26px] font-semibold tracking-[0.15em] text-primary-dark">
             {result.temp_password}
           </div>
-          <p className="text-[12px] font-medium text-red-500">
-            临时密码仅显示一次，请立即通知用户！数据库只存哈希，关闭后无法再次查看
+          <p className="text-[12px] font-medium text-danger">
+            临时密码仅显示一次，系统已同步邮件通知用户；数据库只存哈希，关闭后无法再次查看
           </p>
           <button type="button" className={`${btnPrimaryCls} w-full`} onClick={close}>
             我已抄录并通知用户，关闭
@@ -169,25 +169,27 @@ export default function LegacyUsers(): JSX.Element {
 
   return (
     <div className="space-y-4">
+      <PageTitle title="老用户迁移" desc="帮手机号/微信时代的老用户绑定邮箱，平稳过渡到新账号体系" />
+
       {/* 迁移窗口期醒目提示 */}
-      <div className="rounded-card border-2 border-amber-300 bg-amber-50 p-4">
+      <div className="rounded-lg border border-warning/40 bg-warning/10 p-4">
         <div className="flex items-start gap-2.5">
           <span className="text-[18px] leading-none">⚠️</span>
           <div className="min-w-0 flex-1">
-            <div className="text-[14px] font-semibold text-amber-800">
+            <div className="text-[14px] font-semibold text-warm">
               迁移窗口期：当前还有 {pending} 位老用户未迁移
             </div>
-            <ul className="mt-1.5 list-inside list-disc space-y-1 text-[12px] text-amber-700">
+            <ul className="mt-1.5 list-inside list-disc space-y-1 text-[12px] text-warm-secondary">
               <li>老用户（手机号/微信注册）在绑定邮箱前无法登录，请尽快完成迁移</li>
               <li>建议先绑定管理员账号，再处理普通用户</li>
-              <li>绑定后请立即把邮箱、用户名和临时密码通知到用户本人（临时密码只显示一次）</li>
+              <li>绑定后系统会发迁移通知邮件（含临时密码）；临时密码只在这里显示一次</li>
             </ul>
           </div>
         </div>
       </div>
 
       <div className={cardCls}>
-        <div className="flex items-center justify-between border-b border-soft px-5 py-3.5">
+        <div className="flex items-center justify-between border-b border-border-subtle px-5 py-3.5">
           <div>
             <h3 className="text-[15px] font-semibold text-warm">未迁移用户</h3>
             <p className="mt-0.5 text-[12px] text-warm-light">
@@ -196,7 +198,7 @@ export default function LegacyUsers(): JSX.Element {
           </div>
           <button
             type="button"
-            className="rounded-btn border border-soft px-3 py-1.5 text-[12px] text-warm-light active:bg-soft"
+            className="rounded-md border border-border-subtle px-3 py-1.5 text-[12px] text-warm-light transition-colors hover:bg-soft"
             onClick={load}
           >
             刷新
@@ -208,11 +210,11 @@ export default function LegacyUsers(): JSX.Element {
           <AdminEmpty text="🎉 所有老用户都已完成迁移" />
         ) : (
           <table className={tableCls}>
-            <thead className="border-b border-soft bg-soft/30">
+            <thead className="border-b border-border-subtle bg-soft/40">
               <tr>
                 <th className={thCls}>用户ID</th>
-                <th className={thCls}>原手机号</th>
                 <th className={thCls}>昵称</th>
+                <th className={thCls}>登录方式</th>
                 <th className={thCls}>注册时间</th>
                 <th className={thCls}>空间数</th>
                 <th className={thCls}>方案数</th>
@@ -221,17 +223,17 @@ export default function LegacyUsers(): JSX.Element {
             </thead>
             <tbody>
               {list.map((u) => (
-                <tr key={u.id} className="border-b border-soft/50 last:border-0">
+                <tr key={u.id} className="border-b border-border-subtle/60 last:border-0">
                   <td className={tdCls}>{u.id}</td>
-                  <td className={tdCls}>{u.phone ?? '微信用户'}</td>
-                  <td className={tdCls}>{u.nickname || '-'}</td>
+                  <td className={`${tdCls} font-medium`}>{u.nickname || '-'}</td>
+                  <td className={tdCls}>{u.phone ? `手机号 ${u.phone}` : '微信登录'}</td>
                   <td className={`${tdCls} whitespace-nowrap`}>{fmtTime(u.created_at)}</td>
                   <td className={tdCls}>{u.space_count}</td>
                   <td className={tdCls}>{u.plan_count}</td>
                   <td className={tdCls}>
                     <button
                       type="button"
-                      className="rounded-btn bg-primary px-3 py-1.5 text-[12px] font-medium text-white active:bg-primary-dark"
+                      className="rounded-md bg-primary px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-primary-dark"
                       onClick={() => setBindTarget(u)}
                     >
                       绑定邮箱

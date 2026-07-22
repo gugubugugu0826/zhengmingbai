@@ -1,32 +1,211 @@
-/* 整明白全局样式：与 web 端一致的暖米白 + 橘棕设计语言 */
+/* 整明白 v3 全局样式：设计 tokens 统一来源（与 Web tailwind.config 对齐）
+ * 主色 #B08968 / 深棕 #7D5A2F / 米白 #FAF6EE / sage #7B9F76
+ * 圆角：sm 8px / md 12px / lg 20px / xl 24px / pill 999px（1px ≈ 2rpx）
+ */
 
 page {
-  background-color: #FAF6F0;
-  color: #3A2E24;
+  --primary: #B08968;
+  --primary-dark: #7D5A2F;
+  --cream: #FAF6EE;
+  --sage: #7B9F76;
+  --sage-dark: #5F855C;
+  --warm: #5A5248;
+  --warm-light: #8A8076;
+  --card: #FFFFFF;
+  --soft: #F3EDE5;
+  --danger: #B66A5A;
+
+  background-color: var(--cream);
+  color: var(--warm);
   font-family: -apple-system, "PingFang SC", "Helvetica Neue", Helvetica, sans-serif;
   font-size: 28rpx;
   line-height: 1.6;
 }
 
-/* 主按钮：橘棕 #C08A5E，圆角 16px ≈ 32rpx */
+/* ============ 按钮 ============ */
+
+/* 主按钮：主色，圆角 md 12px ≈ 24rpx */
 .btn-primary {
-  background-color: #C08A5E;
+  background-color: var(--primary);
   color: #FFFFFF;
-  border-radius: 32rpx;
+  border-radius: 24rpx;
   font-size: 32rpx;
   font-weight: 600;
-  padding: 24rpx 48rpx;
+  padding: 26rpx 48rpx;
+  text-align: center;
 }
 
-.btn-primary[disabled] {
+.btn-primary:active {
+  background-color: var(--primary-dark);
+}
+
+.btn-primary[disabled],
+.btn-primary.btn-disabled {
   background-color: #D9C4AE;
   color: #FFFFFF;
 }
 
-/* 卡片容器 */
+/* 描边按钮 */
+.btn-outline {
+  background-color: var(--card);
+  color: var(--primary);
+  border: 2rpx solid var(--primary);
+  border-radius: 24rpx;
+  font-size: 30rpx;
+  padding: 24rpx 48rpx;
+  text-align: center;
+}
+
+.btn-outline:active {
+  background-color: var(--soft);
+}
+
+/* 文字按钮 */
+.btn-text {
+  background: none;
+  color: var(--primary);
+  font-size: 26rpx;
+  padding: 8rpx 16rpx;
+}
+
+/* 危险文字 */
+.text-danger {
+  color: var(--danger);
+}
+
+/* ============ 卡片 ============ */
+
 .card {
-  background-color: #FFFFFF;
-  border-radius: 32rpx;
+  background-color: var(--card);
+  border-radius: 40rpx; /* lg 20px */
   padding: 32rpx;
-  box-shadow: 0 4rpx 16rpx rgba(58, 46, 36, 0.06);
+  box-shadow: 0 4rpx 16rpx rgba(90, 82, 72, 0.06);
+}
+
+.card-flat {
+  background-color: var(--card);
+  border-radius: 40rpx;
+  padding: 32rpx;
+}
+
+/* ============ 表单 ============ */
+
+.input {
+  background-color: var(--cream);
+  border: 2rpx solid var(--soft);
+  border-radius: 24rpx;
+  padding: 24rpx 32rpx;
+  font-size: 30rpx;
+  color: var(--warm);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--primary);
+}
+
+.form-label {
+  display: block;
+  font-size: 26rpx;
+  color: var(--warm-light);
+  margin-bottom: 8rpx;
+}
+
+/* ============ 标签 / 徽章 ============ */
+
+.tag {
+  display: inline-block;
+  background-color: var(--soft);
+  color: var(--warm);
+  border-radius: 12rpx;
+  padding: 4rpx 16rpx;
+  font-size: 22rpx;
+}
+
+.tag-sage {
+  background-color: rgba(123, 159, 118, 0.3);
+  color: var(--sage-dark);
+}
+
+/* 未读红点 */
+.dot-danger {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background-color: var(--danger);
+}
+
+/* ============ 布局工具 ============ */
+
+.page-pad {
+  padding: 24rpx 32rpx;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.items-center {
+  display: flex;
+  align-items: center;
+}
+
+.justify-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.text-sm {
+  font-size: 24rpx;
+}
+
+.text-xs {
+  font-size: 22rpx;
+}
+
+.text-warm-light {
+  color: var(--warm-light);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+/* 截断 */
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 空状态 */
+.empty-box {
+  padding: 80rpx 32rpx;
+  text-align: center;
+  color: var(--warm-light);
+  font-size: 26rpx;
+}
+
+/* 加载中 */
+.loading-box {
+  padding: 60rpx 0;
+  text-align: center;
+  color: var(--warm-light);
+  font-size: 26rpx;
 }
