@@ -1,0 +1,38 @@
+/* webview 占位页样式 */
+
+.webview-placeholder {
+  padding: 48rpx;
+  box-sizing: border-box;
+}
+
+.info-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64rpx 40rpx;
+}
+
+.info-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+
+.info-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #3A2E24;
+  margin-bottom: 24rpx;
+}
+
+.info-desc {
+  font-size: 26rpx;
+  color: #5C4F43;
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+
+.info-note {
+  font-size: 22rpx;
+  color: #8A7A6B;
+  text-align: center;
+}

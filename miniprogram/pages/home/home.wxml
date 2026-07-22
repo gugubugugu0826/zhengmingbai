@@ -1,0 +1,31 @@
+<!-- 首页：问候语 + 开始整理 + 空间列表占位 -->
+<view class="home-page">
+  <view class="header">
+    <view class="greeting">你好，{{nickname}}</view>
+    <view class="sub-greeting">今天也让家里更清爽一点吧</view>
+    <view class="logout" bindtap="onLogout">退出登录</view>
+  </view>
+
+  <button class="btn-primary start-btn" bindtap="onStartOrganize">
+    开始整理
+  </button>
+
+  <view class="section-title">我的空间</view>
+
+  <view wx:if="{{loading}}" class="placeholder card">
+    <view class="placeholder-text">空间加载中…</view>
+  </view>
+
+  <block wx:elif="{{spaces.length > 0}}">
+    <view class="card space-item" wx:for="{{spaces}}" wx:key="id">
+      <view class="space-name">{{item.name || '未命名空间'}}</view>
+      <view class="space-desc">{{item.session_count !== undefined ? item.session_count + ' 次整理' : ''}}</view>
+    </view>
+  </block>
+
+  <view wx:else class="placeholder card">
+    <view class="placeholder-icon">📦</view>
+    <view class="placeholder-text">还没有空间，去 H5 端创建你的第一个收纳空间吧</view>
+    <view wx:if="{{loadError}}" class="placeholder-error">{{loadError}}</view>
+  </view>
+</view>

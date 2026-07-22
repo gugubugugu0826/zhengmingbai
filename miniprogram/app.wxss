@@ -1,0 +1,32 @@
+/* 整明白全局样式：与 web 端一致的暖米白 + 橘棕设计语言 */
+
+page {
+  background-color: #FAF6F0;
+  color: #3A2E24;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", Helvetica, sans-serif;
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+/* 主按钮：橘棕 #C08A5E，圆角 16px ≈ 32rpx */
+.btn-primary {
+  background-color: #C08A5E;
+  color: #FFFFFF;
+  border-radius: 32rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  padding: 24rpx 48rpx;
+}
+
+.btn-primary[disabled] {
+  background-color: #D9C4AE;
+  color: #FFFFFF;
+}
+
+/* 卡片容器 */
+.card {
+  background-color: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(58, 46, 36, 0.06);
+}
