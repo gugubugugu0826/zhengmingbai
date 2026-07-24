@@ -76,7 +76,8 @@ cd server && node qa-t03-e2e.mjs
 
 ## 版本
 
-- **v3.1.0**（当前）：安全加固（helmet/CORS 白名单/JWT 算法白名单 + 凭据轮转）+ 工程化（SQLite busy_timeout/worker 并发锁/优雅关闭/CI 门禁/web 去 axios/deploy 入库）+ 微信推送回调 + AI 改造（火山引擎双底座/真照片效果图 24h 落 COS）+ 小程序 P0 修复
+- **v3.2.0**（当前）：P0 修复（AI 模型名切火山 Doubao/邮箱码登录死循环/points.wxml 漏改）+ 全站头部 sticky + gitleaks 密钥扫描 CI + 6 项 UI 打磨 + 新功能（管理员增删/用户封锁解封，仅超管）
+- v3.1.0：安全加固（helmet/CORS 白名单/JWT 算法白名单 + 凭据轮转）+ 工程化（SQLite busy_timeout/worker 并发锁/优雅关闭/CI 门禁/web 去 axios/deploy 入库）+ 微信推送回调 + AI 改造（火山引擎双底座/真照片效果图 24h 落 COS）+ 小程序 P0 修复
 - v3.0.0：前端三端改造（Web 桌面化 22 页 + 小程序 10 页）+ 账号增强（忘记密码/更改邮箱/验证码弹窗）+ 新功能（30 天复查提醒/前后对比/商城/注册开关/维护模式）
 - v2.2.0：账号体系重做（三方式登录 + 图形验证码 + /admin 双因子 + 老用户迁移）+ 9 项遗留 Bug 修复
 - v2.1：管理员后台 + 文生图 + 双因子登录
