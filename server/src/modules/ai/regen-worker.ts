@@ -120,13 +120,22 @@ async function tick(): Promise<void> {
   }
 }
 
+/** v3.1 T03：模块级 isBusy 锁——tick 内 AI 调用耗时常超 3s 间隔，防 setInterval+async 叠加并发 */
+let isBusy = false;
+
 /** 启动重生成 worker（每 3 秒轮询），返回 interval 句柄供优雅关闭 */
 export function startRegenWorker(): NodeJS.Timeout {
   recoverStaleTasks();
   const timer = setInterval(() => {
-    tick().catch((err) => logger.warn({ err }, 'regen worker tick 异常'));
+    if (isBusy) return; // 上一轮还没跑完，跳过本轮（全局 AI 并发=regen(1)+t2i(1)=2）
+    isBusy = true;
+    tick()
+      .catch((err) => logger.warn({ err }, 'regen worker tick 异常'))
+      .finally(() => {
+        isBusy = false;
+      });
   }, 3000);
   timer.unref?.();
-  logger.info('重生成 worker 已启动（3s 轮询）');
+  logger.info('重生成 worker 已启动（3s 轮询，isBusy 防叠加）');
   return timer;
 }

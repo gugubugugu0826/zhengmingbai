@@ -20,7 +20,7 @@ import { db, nowIso } from '../../db.js';
 import { BizError } from '../../common/errors.js';
 import { changeBalance, getBalance } from '../points/service.js';
 import { getPointsRules } from '../configs/service.js';
-import { buildT2iPrompt } from '../ai/t2i-client.js';
+import { buildT2iPrompt, buildImagePrompt } from '../ai/t2i-client.js';
 import { storage } from '../upload/storage.js';
 import type { PlanContent } from '../ai/orchestrator.types.js';
 
@@ -257,18 +257,33 @@ plansRouter.post('/:id/t2i', (req: AuthRequest, res) => {
 
   const COST = 5;
   const content = JSON.parse(plan.content_json) as PlanContent;
-  const prompt = buildT2iPrompt(content.after_state_desc);
+  // v3.1 D 板块：取该 session 首张 before 照片作图+文生图参考图（cos_key 随任务落库，
+  // worker 取出后签 3600s COS 签名 URL 传给火山；无 before 照片=老数据兼容走旧文生图）
+  const refPhoto = db
+    .prepare(
+      `SELECT cos_key FROM photos
+       WHERE session_id = ? AND kind = 'before' AND status = 'active'
+       ORDER BY id LIMIT 1`,
+    )
+    .get(session.id) as { cos_key: string } | undefined;
+  const prompt = refPhoto
+    ? buildImagePrompt(
+        content.after_state_desc,
+        content.steps.map((s) => s.action),
+      )
+    : buildT2iPrompt(content.after_state_desc);
   // bizId 用任务序号保证每次发起独立入账；3001 余额不足原样抛
   const seq =
     (db.prepare('SELECT COUNT(*) AS c FROM t2i_tasks WHERE plan_id = ?').get(plan.id) as {
       c: number;
     }).c + 1;
-  changeBalance(userId, -COST, 't2i', `t2i:${plan.id}:${seq}`, '生成专属示意图');
+  changeBalance(userId, -COST, 't2i', `t2i:${plan.id}:${seq}`, '生成专属效果图');
   const r = db
     .prepare(
-      `INSERT INTO t2i_tasks (plan_id, session_id, user_id, status, prompt) VALUES (?, ?, ?, 'pending', ?)`,
+      `INSERT INTO t2i_tasks (plan_id, session_id, user_id, status, prompt, ref_photo_key)
+       VALUES (?, ?, ?, 'pending', ?, ?)`,
     )
-    .run(plan.id, session.id, userId, prompt);
+    .run(plan.id, session.id, userId, prompt, refPhoto?.cos_key ?? null);
   ok(
     res,
     { task_id: Number(r.lastInsertRowid), charged: COST, balance: getBalance(userId).balance },

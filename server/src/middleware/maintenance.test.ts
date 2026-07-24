@@ -78,7 +78,7 @@ test('维护开启：业务路径拦截 503 + code 3001 + notice', async () => {
   assert.equal(body.data.notice, '系统升级维护中，预计 30 分钟');
 });
 
-test('维护开启：豁免路径放行（/health、/api/v1/admin/*、/api/v1/configs）', async () => {
+test('维护开启：豁免路径放行（/health、/api/v1/admin/*、/api/v1/configs、/api/v1/wechat）', async () => {
   const { maintenanceMiddleware } = await import('./maintenance.js');
   for (const path of [
     '/health',
@@ -86,6 +86,7 @@ test('维护开启：豁免路径放行（/health、/api/v1/admin/*、/api/v1/co
     '/api/v1/admin/users',
     '/api/v1/configs',
     '/api/v1/configs/public',
+    '/api/v1/wechat', // v3.1 T05：维护期微信回调不能 503
   ]) {
     const res = mockRes();
     let nextCalled = false;

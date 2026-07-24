@@ -1,8 +1,10 @@
 /**
- * 百炼 OpenAI 兼容模式公共底座（阶段 2 R39/R40）。
- * 裸 fetch 调 {baseURL}/chat/completions——视觉（qwen-vl-plus）与文本（qwen-plus）同一个 POST。
- * baseURL 优先 configs 表 ai.base_url，兜底 .env DASHSCOPE_BASE_URL，再兜底业务空间专属域名。
- * 超时 60s，网络/5xx 失败自动重试 1 次（退避 2s）。
+ * OpenAI 兼容协议公共底座（阶段 2 R39/R40；v3.1 D-2 双底座 provider 切换）。
+ * 裸 fetch 调 {baseURL}/chat/completions——视觉与文本同一个 POST。
+ * provider 由 configs 表 ai.provider 决定：
+ *   volcengine（默认）→ 火山引擎方舟（豆包），baseURL/key 走 config.volcEngine*
+ *   dashscope         → 阿里云百炼（千问）fallback，baseURL 优先 configs ai.base_url
+ * 火山方舟兼容 OpenAI 协议，请求 body 不变。超时 60s，网络/5xx 失败自动重试 1 次（退避 2s）。
  */
 import { config } from '../../config.js';
 import { getConfig } from '../configs/service.js';
@@ -31,9 +33,37 @@ export interface ChatResult {
   outputTokens: number;
 }
 
+/** AI 底座提供方：volcengine=火山引擎方舟（默认）；dashscope=阿里云百炼（fallback，代码全保留） */
+export type AiProvider = 'volcengine' | 'dashscope';
+
 const FALLBACK_BASE_URL =
   'https://ws-nyo2f1ym27hvfsi8.cn-beijing.maas.aliyuncs.com/compatible-mode/v1';
 
+/** 当前生效的 AI 底座（configs 热加载，改配置即时生效，不发版） */
+export function resolveProvider(): AiProvider {
+  return getConfig<string>('ai.provider', 'volcengine') === 'dashscope'
+    ? 'dashscope'
+    : 'volcengine';
+}
+
+/** 按 provider 解析本次调用的 baseURL + apiKey */
+function resolveEndpoint(): { baseUrl: string; apiKey: string; provider: AiProvider } {
+  const provider = resolveProvider();
+  if (provider === 'dashscope') {
+    return {
+      provider,
+      baseUrl: getConfig<string>('ai.base_url', config.dashscopeBaseUrl || FALLBACK_BASE_URL),
+      apiKey: config.dashscopeApiKey,
+    };
+  }
+  return {
+    provider,
+    baseUrl: config.volcEngineBaseUrl,
+    apiKey: config.volcEngineApiKey,
+  };
+}
+
+/** 百炼兼容模式 baseURL（保留导出，供外部/测试使用） */
 export function dashscopeBaseUrl(): string {
   return getConfig<string>('ai.base_url', config.dashscopeBaseUrl || FALLBACK_BASE_URL);
 }
@@ -44,10 +74,11 @@ export async function chatCompletion(params: {
   responseFormatJson?: boolean;
   maxTokens?: number;
 }): Promise<ChatResult> {
-  if (!config.dashscopeApiKey) {
+  const endpoint = resolveEndpoint();
+  if (!endpoint.apiKey) {
     throw BizError.ai('AI 服务未配置钥匙，请联系运营处理');
   }
-  const url = `${dashscopeBaseUrl().replace(/\/+$/, '')}/chat/completions`;
+  const url = `${endpoint.baseUrl.replace(/\/+$/, '')}/chat/completions`;
   const body = JSON.stringify({
     model: params.model,
     messages: params.messages,
@@ -65,7 +96,7 @@ export async function chatCompletion(params: {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          authorization: `Bearer ${config.dashscopeApiKey}`,
+          authorization: `Bearer ${endpoint.apiKey}`,
         },
         body,
         signal: controller.signal,
@@ -100,12 +131,16 @@ export async function chatCompletion(params: {
 }
 
 /**
- * 成本估算（阿里云百炼 2026 刊例价，元/百万 token，输入/输出）：
- * qwen-vl-plus ¥1.5 / ¥4.5；qwen-plus ¥0.8 / ¥2；未知模型按 qwen-plus 估。
+ * 成本估算（元/百万 token，输入/输出）：
+ * - 豆包（模型名含 doubao）：输入 ¥0.8 / 输出 ¥2（占位，待火山刊例确认后改本函数一行）
+ * - qwen-vl-plus ¥1.5 / ¥4.5；qwen-plus ¥0.8 / ¥2（阿里云百炼 2026 刊例价）
+ * - 未知模型按 ¥0.8 / ¥2 估
  */
 export function estimateCostYuan(model: string, inputTokens: number, outputTokens: number): number {
-  const price = model.includes('vl')
-    ? { in: 1.5, out: 4.5 }
-    : { in: 0.8, out: 2.0 };
+  const price = model.includes('doubao')
+    ? { in: 0.8, out: 2.0 }
+    : model.includes('vl')
+      ? { in: 1.5, out: 4.5 }
+      : { in: 0.8, out: 2.0 };
   return (inputTokens * price.in + outputTokens * price.out) / 1_000_000;
 }

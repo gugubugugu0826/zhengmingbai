@@ -13,6 +13,7 @@ import path from 'node:path';
 import { config } from './config.js';
 import { migrateV22 } from './migrations/v22-users-captcha.js';
 import { migrateV3 } from './migrations/v3-ops-photos.js';
+import { migrateV31T2iRefPhoto } from './migrations/v31-t2i-ref-photo.js';
 
 fs.mkdirSync(path.dirname(config.dbFile), { recursive: true });
 
@@ -20,6 +21,10 @@ export const db = new DatabaseSync(config.dbFile);
 
 db.exec('PRAGMA journal_mode = WAL;');
 db.exec('PRAGMA foreign_keys = ON;');
+// v3.1 T03：写锁等待 5s（WAL 读写不互斥，写-写竞争时快速失败重试而非 SQLITE_BUSY 直接抛错）
+db.exec('PRAGMA busy_timeout = 5000;');
+// v3.1 T03：WAL 模式下 NORMAL 已保证崩溃一致性（checkpoint 时刷盘），性能显著优于 FULL
+db.exec('PRAGMA synchronous = NORMAL;');
 
 /** 建表（幂等，启动时执行） */
 export function migrate(): void {
@@ -326,6 +331,9 @@ CREATE INDEX IF NOT EXISTS idx_t2i_plan ON t2i_tasks(plan_id);
 
   // ===== v3 增量迁移（photos.kind 前后对比 + ops 开关种子 + 新三档套餐订正） =====
   migrateV3();
+
+  // ===== v3.1 D 板块增量迁移（t2i_tasks.ref_photo_key：图+文生图参考图） =====
+  migrateV31T2iRefPhoto();
 }
 
 /** 受影响行数兜底（node:sqlite 各小版本 changes 返回 number | bigint 不一） */

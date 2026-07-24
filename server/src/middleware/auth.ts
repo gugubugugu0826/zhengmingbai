@@ -34,7 +34,8 @@ export function signAdminTicket(userId: number): string {
 
 /** 校验 admin_ticket（step3 用）：返回 userId，非法/过期抛异常由路由统一转 401 */
 export function verifyAdminTicket(ticket: string): number {
-  const payload = jwt.verify(ticket, config.jwtSecret) as {
+  // v3.1 T01：显式锁定 HS256 算法白名单，防算法混淆攻击（alg=none / RS256→HS256 降级）
+  const payload = jwt.verify(ticket, config.jwtSecret, { algorithms: ['HS256'] }) as {
     uid: number;
     scope?: TokenScope;
   };
@@ -50,7 +51,8 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     return;
   }
   try {
-    const payload = jwt.verify(token, config.jwtSecret) as {
+    // v3.1 T01：显式锁定 HS256 算法白名单，防算法混淆攻击
+    const payload = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'] }) as {
       uid: number;
       role?: string;
       scope?: TokenScope;

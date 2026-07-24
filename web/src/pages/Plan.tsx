@@ -197,21 +197,21 @@ function ShareModal({
 
   useEffect(() => {
     let revoked: string | null = null;
-    // SVG 接口需带 JWT（浏览器 <img> 不能带 header），用 axios 拉 blob 转本地 URL
-    import('axios').then(({ default: axios }) => {
-      axios
-        .get(`/api/v1/share/${sessionId}/card.svg`, {
-          responseType: 'blob',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('zmb_token') ?? ''}`,
-          },
-        })
-        .then((resp) => {
-          revoked = URL.createObjectURL(resp.data as Blob);
-          setSvgUrl(revoked);
-        })
-        .catch(() => toast('分享卡片加载失败', 'error'));
-    });
+    // SVG 接口需带 JWT（浏览器 <img> 不能带 header），用 fetch 拉 blob 转本地 URL（v3.1 T03：axios 已移除）
+    fetch(`/api/v1/share/${sessionId}/card.svg`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('zmb_token') ?? ''}`,
+      },
+    })
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        return resp.blob();
+      })
+      .then((blob) => {
+        revoked = URL.createObjectURL(blob);
+        setSvgUrl(revoked);
+      })
+      .catch(() => toast('分享卡片加载失败', 'error'));
     return () => {
       if (revoked) URL.revokeObjectURL(revoked);
     };
@@ -283,7 +283,7 @@ export default function PlanPage(): JSX.Element {
         await loadRef.current();
         const bal = await api.get<{ balance: number }>('/points/balance').catch(() => null);
         if (bal) setBalance(bal.balance);
-        toast('专属示意图画好啦', 'success');
+        toast('专属效果图画好啦', 'success');
       } else {
         setT2iFailedTask(task);
         toast(task.error ?? '画画失败了，点重试免费再画一次', 'error');
@@ -532,7 +532,7 @@ export default function PlanPage(): JSX.Element {
                     className="w-full rounded-btn bg-primary py-2 text-[12px] font-medium text-white active:bg-primary-dark disabled:opacity-50"
                     onClick={() => void generateT2i()}
                   >
-                    {t2iGenerating ? '正在画你的家…' : '✨ 生成专属示意图 · 5 点'}
+                    {t2iGenerating ? '正在画你的家…' : '✨ 生成专属效果图 · 5 点'}
                   </button>
                   {t2iFailedTask?.can_free_retry && (
                     <button

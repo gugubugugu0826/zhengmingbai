@@ -27,3 +27,23 @@ jobs:
 
       - name: 前端构建
         run: npm run build --workspace=web --if-present
+
+  server-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      # v3.1 T03：server 单测（node:test + tsx --test；存量 TS2352 类型错误为已知项，typecheck 暂不入门禁）
+      - name: 后端单元测试
+        run: npx tsx --test 'src/**/*.test.ts'
+        working-directory: server

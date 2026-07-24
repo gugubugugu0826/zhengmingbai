@@ -117,19 +117,20 @@
         还没有消息
         <view class="msg-empty-hint">整理完 30 天后，我会提醒你回去看看</view>
       </view>
-      <view
-        wx:else
-        class="msg-item {{item.is_read === 0 ? 'msg-unread' : ''}}"
-        wx:for="{{messages}}"
-        wx:key="id"
-        bindtap="goMessages"
-      >
-        <view class="msg-title-row">
-          <view class="msg-title ellipsis">{{item.title}}</view>
-          <view class="dot-danger" wx:if="{{item.is_read === 0}}"></view>
+      <block wx:else>
+        <view
+          class="msg-item {{item.is_read === 0 ? 'msg-unread' : ''}}"
+          wx:for="{{messages}}"
+          wx:key="id"
+          bindtap="goMessages"
+        >
+          <view class="msg-title-row">
+            <view class="msg-title ellipsis">{{item.title}}</view>
+            <view class="dot-danger" wx:if="{{item.is_read === 0}}"></view>
+          </view>
+          <view class="msg-content">{{item.content}}</view>
         </view>
-        <view class="msg-content">{{item.content}}</view>
-      </view>
+      </block>
     </view>
   </view>
 

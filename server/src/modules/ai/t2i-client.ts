@@ -91,6 +91,32 @@ export function buildT2iPrompt(afterStateDesc: string): string {
 }
 
 /**
+ * D-6 图+文生图专用提示词：强调"照片级真实感、同视角、只整理不换家具"。
+ * @param afterStateDesc 方案第⑤部分"整理后场景描述"
+ * @param actions 方案关键动作（执行步骤 action 列表，逐条进 prompt）
+ */
+export function buildImagePrompt(afterStateDesc: string, actions: string[] = []): string {
+  const actionLines = actions
+    .slice(0, 10)
+    .map((a, i) => `${i + 1}. ${a}`)
+    .join('\n');
+  return `你是一位专业居家整理设计师。请基于用户提供的"整理前"照片，按照以下整理方案，生成同一视角的"整理后"效果图。
+
+【整理方案】
+${afterStateDesc.slice(0, 300)}
+
+【关键动作】
+${actionLines || '（按整理方案执行）'}
+
+要求：
+- 保持原图视角、光线、空间结构不变
+- 移除/归位明显杂物，物品摆放整齐归类合理
+- 整体干净、舒适、有序
+- 照片级真实感，不要卡通/插画风格
+- 不改变家具位置和大致布局（除非方案明确要求）`;
+}
+
+/**
  * 文生图（开关默认关）。失败一律回退素材图——插画是锦上添花，绝不能让主流程翻车。
  */
 export async function generateIllustration(

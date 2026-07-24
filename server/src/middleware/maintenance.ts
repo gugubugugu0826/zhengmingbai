@@ -4,19 +4,21 @@
  * - 每次请求热读 configs 表 `ops.maintenance`（{enabled, notice}），改配置即时生效。
  * - 开启时全站拦截：HTTP 503 + { code: 3001, message, data: { notice } }，
  *   Web api.ts / 小程序 request.js 拦截 3001 渲染全屏维护页。
- * - 豁免路径（管理员自救 + 探活 + 客户端读公告）：
- *   /health、/api/v1/admin/*、/api/v1/configs*。
+ * - 豁免路径（管理员自救 + 探活 + 客户端读公告 + 微信回调）：
+ *   /health、/api/v1/admin/*、/api/v1/configs*、/api/v1/wechat*。
  * - 挂载位置：globalLimiter 之后、JWT 中间件之前（全站生效，含无鉴权路由）。
  */
 import type { NextFunction, Request, Response } from 'express';
 import { ERR_MAINTENANCE } from '../common/messages.js';
 import { getMaintenance } from '../modules/configs/service.js';
 
-/** 豁免判定：探活 / 后台管理 / 配置读写（管理员开关页自救） */
+/** 豁免判定：探活 / 后台管理 / 配置读写（管理员开关页自救） / 微信回调（维护期平台回调不能 503） */
 function isExempt(path: string): boolean {
   if (path === '/health') return true;
   if (path === '/api/v1/admin' || path.startsWith('/api/v1/admin/')) return true;
   if (path === '/api/v1/configs' || path.startsWith('/api/v1/configs/')) return true;
+  // v3.1 T05：维护模式下微信回调若 503，平台连续失败会自动停用回调配置
+  if (path === '/api/v1/wechat' || path.startsWith('/api/v1/wechat/')) return true;
   return false;
 }
 

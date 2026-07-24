@@ -62,23 +62,24 @@
     <view>还没有整理记录</view>
     <view class="empty-hint">去首页点「开始整理」来一次吧</view>
   </view>
-  <view
-    wx:else
-    class="card record-card"
-    wx:for="{{history}}"
-    wx:key="id"
-    data-id="{{item.id}}"
-    data-status="{{item.status}}"
-    bindtap="openRecord"
-  >
-    <view class="record-date">{{item.dateText}}</view>
-    <view class="record-info">
-      <view class="record-title">{{item.granularityLabel}}整理 · {{item.photo_count}} 张照片</view>
-      <view class="record-meta">
-        {{item.statusLabel}}{{item.points_charged > 0 ? ' · 花了 ' + item.points_charged + ' 点' : ''}}
+  <block wx:else>
+    <view
+      class="card record-card"
+      wx:for="{{history}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      data-status="{{item.status}}"
+      bindtap="openRecord"
+    >
+      <view class="record-date">{{item.dateText}}</view>
+      <view class="record-info">
+        <view class="record-title">{{item.granularityLabel}}整理 · {{item.photo_count}} 张照片</view>
+        <view class="record-meta">
+          {{item.statusLabel}}{{item.points_charged > 0 ? ' · 花了 ' + item.points_charged + ' 点' : ''}}
+        </view>
       </view>
+      <view class="record-arrow">›</view>
     </view>
-    <view class="record-arrow">›</view>
-  </view>
+  </block>
 </view>
 <view class="loading-box" wx:else>正在打开空间…</view>

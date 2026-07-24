@@ -1,5 +1,6 @@
 /**
- * 轻量 axios 封装：统一前缀 /api/v1、JWT 注入、code !== 0 统一抛错。
+ * 轻量 fetch 封装（v3.1 T03：axios → 原生 fetch，签名与拦截语义全保留，调用方零改动）：
+ * 统一前缀 /api/v1、JWT 注入、code !== 0 统一抛错。
  * code 2001（未登录/过期）自动清 C 端 token 并跳登录页。
  *
  * v2.2 T04：/api/v1/admin/*（不含 /admin/auth/* 公开登录段）注入独立 admin token
@@ -12,7 +13,6 @@
  * - 错误码备注：2107=暂停注册（注册页拦截），2108=手机号占用
  *   （注意 v3 语义迁移：2107 从"手机号占用"让位给"暂停注册"，手机号占用改用 2108）。
  */
-import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from 'axios';
 import { adminTokenStore } from './admin/auth';
 import { maintenanceStore } from './maintenance';
 
@@ -83,48 +83,84 @@ export class ApiError extends Error {
   }
 }
 
-const client: AxiosInstance = axios.create({
-  baseURL: '/api/v1',
-  timeout: 60000, // AI 分析 Mock 秒回，真实模式预留长超时
-});
-
 /** 是否 /admin 后台接口（公开登录段 /admin/auth/* 除外） */
 function isAdminApi(url: string | undefined): boolean {
   return !!url && url.startsWith('/admin/') && !url.startsWith('/admin/auth/');
 }
 
-client.interceptors.request.use((config) => {
-  const token = isAdminApi(config.url) ? adminTokenStore.get() : tokenStore.get();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+/** 请求超时（ms）：对齐原 axios 配置 60s（AI 分析 Mock 秒回，真实模式预留长超时） */
+const REQUEST_TIMEOUT_MS = 60000;
 
-client.interceptors.response.use(
-  (response: AxiosResponse<Envelope<unknown>>) => response,
-  (error: AxiosError<Envelope<unknown>>) => {
-    // 非 2xx：后端统一响应格式里带上 code/message
-    const body = error.response?.data;
-    const code = body?.code ?? -1;
-    const message = body?.message ?? '网络开了小差，请稍后再试';
-    if (code === API_CODES.MAINTENANCE) {
-      handleMaintenance(body?.data, message);
+/** 会话失效分支：双通道（C 端 / admin 端）隔离处理，axios 拦截器同款语义 */
+function handleAuthError(code: number): void {
+  if (code !== API_CODES.UNAUTHORIZED && code !== API_CODES.FORBIDDEN) return;
+  // /admin 会话失效：只清 admin token，由 AdminLogin 页跳回 /admin（不动 C 端登录态）
+  if (window.location.pathname.startsWith('/admin')) {
+    adminTokenStore.clear();
+  } else if (code === API_CODES.UNAUTHORIZED) {
+    tokenStore.clear();
+    if (!window.location.pathname.startsWith('/login')) {
+      window.location.href = '/login';
     }
-    if (code === 2001 || code === 2003) {
-      // /admin 会话失效：只清 admin token，由 AdminLogin 页跳回 /admin（不动 C 端登录态）
-      if (window.location.pathname.startsWith('/admin')) {
-        adminTokenStore.clear();
-      } else if (code === 2001) {
-        tokenStore.clear();
-        if (!window.location.pathname.startsWith('/login')) {
-          window.location.href = '/login';
-        }
+  }
+}
+
+/** fetch 底层调用：拼接 baseURL/params、注入 JWT、JSON 编解码、超时控制 */
+async function fetchRaw(
+  method: string,
+  url: string,
+  body?: unknown,
+  params?: Record<string, unknown>,
+): Promise<Response> {
+  // 拼 query（axios params 语义：undefined/null 跳过，数组重复 key，对象 JSON 序列化）
+  let fullUrl = `/api/v1${url}`;
+  if (params) {
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value === undefined || value === null) continue;
+      if (Array.isArray(value)) {
+        for (const item of value) search.append(key, String(item));
+      } else if (typeof value === 'object') {
+        search.append(key, JSON.stringify(value));
+      } else {
+        search.append(key, String(value));
       }
     }
-    return Promise.reject(new ApiError(code, message));
-  },
-);
+    const qs = search.toString();
+    if (qs) fullUrl += `?${qs}`;
+  }
+
+  const headers: Record<string, string> = {};
+  const token = isAdminApi(url) ? adminTokenStore.get() : tokenStore.get();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  let requestBody: string | undefined;
+  if (body !== undefined && body !== null) {
+    headers['Content-Type'] = 'application/json';
+    requestBody = JSON.stringify(body);
+  }
+
+  // AbortController 实现超时（axios timeout 语义）
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(fullUrl, {
+      method: method.toUpperCase(),
+      headers,
+      body: requestBody,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new ApiError(-1, '请求超时，请稍后再试');
+    }
+    // 网络层失败（DNS/断网/CORS 等，fetch 不会抛 HTTP 错误码）
+    throw new ApiError(-1, '网络开了小差，请稍后再试');
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /** 统一请求：解包 { code, data, message }，code !== 0 抛 ApiError */
 export async function request<T>(
@@ -133,22 +169,37 @@ export async function request<T>(
   body?: unknown,
   params?: Record<string, unknown>,
 ): Promise<T> {
-  const resp = await client.request<Envelope<T>>({ method, url, data: body, params });
-  const envelope = resp.data;
+  const resp = await fetchRaw(method, url, body, params);
+
+  // 解析响应体（非 JSON 响应兜底为空 envelope，走默认错误文案）
+  let envelope: Envelope<T> | null = null;
+  try {
+    envelope = (await resp.json()) as Envelope<T>;
+  } catch {
+    envelope = null;
+  }
+
+  // 非 2xx：后端统一响应格式里带上 code/message（axios 响应拦截器同款分支）
+  if (!resp.ok) {
+    const code = envelope?.code ?? -1;
+    const message = envelope?.message ?? '网络开了小差，请稍后再试';
+    if (code === API_CODES.MAINTENANCE) {
+      handleMaintenance(envelope?.data, message);
+    }
+    handleAuthError(code);
+    throw new ApiError(code, message);
+  }
+
+  if (!envelope) {
+    throw new ApiError(-1, '网络开了小差，请稍后再试');
+  }
+
+  // 2xx 但业务 code !== 0：同样走维护/会话拦截
   if (envelope.code !== 0) {
     if (envelope.code === API_CODES.MAINTENANCE) {
       handleMaintenance(envelope.data, envelope.message);
     }
-    if (envelope.code === 2001 || envelope.code === 2003) {
-      if (window.location.pathname.startsWith('/admin')) {
-        adminTokenStore.clear();
-      } else if (envelope.code === 2001) {
-        tokenStore.clear();
-        if (!window.location.pathname.startsWith('/login')) {
-          window.location.href = '/login';
-        }
-      }
-    }
+    handleAuthError(envelope.code);
     throw new ApiError(envelope.code, envelope.message || '请求失败');
   }
   return envelope.data;

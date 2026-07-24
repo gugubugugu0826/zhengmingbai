@@ -59,8 +59,16 @@ export const config = {
   dashscopeBaseUrl:
     process.env.DASHSCOPE_BASE_URL ||
     'https://ws-nyo2f1ym27hvfsi8.cn-beijing.maas.aliyuncs.com/compatible-mode/v1',
+  /** v3.1 D 板块：火山引擎方舟（豆包/Seedream）。Key 只走 env，严禁硬编码进代码 */
+  volcEngineApiKey: process.env.VOLCENGINE_API_KEY || '',
+  volcEngineBaseUrl:
+    process.env.VOLCENGINE_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3',
   wechatAppId: process.env.WECHAT_APPID || '',
   wechatSecret: process.env.WECHAT_SECRET || '',
+  /** v3.1 T05：公众号消息回调 Token（签名校验用；安全红线——仅环境变量注入，代码不留明文默认值） */
+  wechatMsgToken: process.env.WECHAT_MSG_TOKEN || '',
+  /** v3.1 T05：公众号消息加解密 AES Key（安全模式预留；兼容明文模式可不配，仅环境变量注入） */
+  wechatMsgAesKey: process.env.WECHAT_MSG_AES_KEY || '',
   cos: {
     secretId: process.env.COS_SECRET_ID || '',
     secretKey: process.env.COS_SECRET_KEY || '',

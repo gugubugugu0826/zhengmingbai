@@ -6,6 +6,7 @@
 import { db, nowIso } from '../../db.js';
 import { logger } from '../../common/logger.js';
 import { getConfig } from '../configs/service.js';
+import { sendReminderSubscribeMessage } from '../wechat/subscribe-push.js';
 
 /** 30 天提醒默认文案（v3 设计稿口径；configs `reminder.template` 可覆盖，{{space_name}} 可变） */
 const DEFAULT_REMINDER_TEMPLATE = '整理完 30 天了，回去看看{{space_name}}保持得怎么样';
@@ -20,13 +21,16 @@ interface DueReminder {
   space_id: number;
   space_name: string;
   reminder_enabled: number;
+  /** v3.1 T05：订阅消息推送 openid（Mock 用户为 mock_ 前缀，推送层自动跳过） */
+  wechat_openid: string | null;
 }
 
 /** 扫描一轮：到期 pending → 写 messages 置 sent（关开关则置 cancelled） */
 export function scanDueReminders(): number {
   const due = db
     .prepare(
-      `SELECT r.id, r.user_id, r.session_id, s.space_id, sp.name AS space_name, u.reminder_enabled
+      `SELECT r.id, r.user_id, r.session_id, s.space_id, sp.name AS space_name, u.reminder_enabled,
+              u.wechat_openid
        FROM reminders r
        JOIN sessions s ON s.id = r.session_id
        JOIN spaces sp ON sp.id = s.space_id
@@ -61,6 +65,15 @@ export function scanDueReminders(): number {
       r.id,
     );
     sent += 1;
+    // v3.1 T05：站内消息之外增量触达——微信订阅消息推送。
+    // 模板 ID 未配 / Mock 环境 / Mock openid 时静默跳过（只发站内消息）；失败仅记日志不影响状态机。
+    if (r.wechat_openid) {
+      sendReminderSubscribeMessage({
+        openid: r.wechat_openid,
+        spaceName: r.space_name,
+        page: `pages/spaces/spaces?focus=${r.space_id}`,
+      }).catch((err) => logger.warn({ err, reminderId: r.id }, '订阅消息推送异常'));
+    }
   }
   if (due.length > 0) {
     logger.info({ due: due.length, sent }, '复查提醒扫描完成');
