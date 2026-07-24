@@ -10,6 +10,8 @@ export interface AdminUserRow {
   email: string | null;
   nickname: string;
   role: string;
+  /** v3.2 §5.2：'active' | 'blocked' */
+  status: string;
   created_at: string;
   balance: number;
   total_spent: number;
@@ -144,4 +146,9 @@ export const ADMIN_ACTION_LABELS: Record<string, string> = {
   admin_password_change: '修改密码',
   admin_password_reset: '重置密码',
   legacy_user_bind: '老用户迁移绑定',
+  // v3.2 T05：管理员增删 / 用户封锁解封
+  admin_add: '新增管理员',
+  admin_remove: '移除管理员',
+  user_block: '封禁用户',
+  user_unblock: '解封用户',
 };

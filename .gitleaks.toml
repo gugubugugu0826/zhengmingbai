@@ -1,0 +1,76 @@
+# =============================================================================
+# Gitleaks 配置 —— 「整明白」项目密钥扫描硬门禁（v3.2 T03 / 任务书条目 3.2）
+#
+# 背景：项目经历过 qa-admin-token.txt 有效 JWT 入仓事故（已 BFG 清史），
+# 本配置配合 CI secret-scan job 防止真实密钥再次入仓。
+#
+# 放行原则（仅放行以下三类，其余一律拦截）：
+#   1. 测试文件与文档目录中的假 token / 示例值
+#   2. 已在任务书公开的非对称密钥性质标识（微信回调验签 Token）
+#   3. .env.example 中的占位值（dev-only-secret-change-me 等）
+#
+# 明确【不放行】（命中即门禁失败）：
+#   - ark- 前缀火山引擎 API Key
+#   - ADMIN_INIT_PASSWORD_* 真实值
+#   - JWT_SECRET / FILE_SIGN_SECRET 真实值
+#   - 服务器密码 Lzpzhengmingbai_*
+#   - 任何有效 JWT（eyJ 开头三段式 token）
+# =============================================================================
+
+title = "zhengmingbai gitleaks config"
+
+# 在默认规则集之上追加项目定制配置（默认规则已覆盖 JWT/AWS/GitHub 等常见密钥形态）
+[extend]
+useDefault = true
+
+# -----------------------------------------------------------------------------
+# 项目定制规则：默认规则集未覆盖、但本项目明确要拦的密钥形态
+# -----------------------------------------------------------------------------
+[[rules]]
+id = "volcengine-ark-api-key"
+description = "火山引擎方舟 API Key（ark- 前缀）——真实密钥，必须拦截"
+regex = '''ark-[A-Za-z0-9]{16,}'''
+keywords = ["ark-"]
+
+[[rules]]
+id = "admin-init-password-value"
+description = "管理员初始密码真实值（ADMIN_INIT_PASSWORD_* 族）——必须拦截"
+regex = '''ADMIN_INIT_PASSWORD_[A-Z0-9_]*\s*=\s*["']?[A-Za-z0-9!@#$%^&*\-_]{8,}'''
+keywords = ["ADMIN_INIT_PASSWORD_"]
+
+[[rules]]
+id = "zmb-server-password"
+description = "服务器密码（Lzpzhengmingbai_ 前缀）——必须拦截"
+regex = '''Lzpzhengmingbai_[A-Za-z0-9!@#$%^&*]*'''
+keywords = ["Lzpzhengmingbai_"]
+
+# -----------------------------------------------------------------------------
+# 全局放行清单（allowlist）
+# -----------------------------------------------------------------------------
+[allowlist]
+description = "放行测试假 token、文档示例与项目内已知非密项"
+
+# 按路径放行：测试文件 / 文档 / 环境样例文件中的命中一律视为误报
+paths = [
+  '''.*_test\.go''',          # Go 测试文件
+  '''.*\.test\.ts''',         # TS 单测（server/src/**/*.test.ts）
+  '''.*\.test\.tsx''',        # TSX 单测
+  '''docs/.*''',              # 文档目录（任务书/架构设计中的示例值）
+  '''README\.md''',           # 根 README 示例
+  '''(.*^|/)\.env\.example''',  # 环境变量样例文件（根目录与子目录均覆盖，仅占位值）
+  '''(^|/)node_modules/''',   # 第三方依赖（非本项目代码，含上游测试样例 JWT）
+  '''.*-lock\.json''',        # 锁文件（含 integrity 哈希，高熵误报高发）
+]
+
+# 按内容放行：匹配以下模式的命中视为已知非密项
+regexes = [
+  '''sk-test-[A-Za-z0-9]+''',                     # 单测假 key（OpenAI 风格占位）
+  '''SmokePass123''',                             # server/smoke.mjs 冒烟测试口令（可被 SMOKE_PASSWORD 环境变量覆盖，非生产凭据）
+  '''zmb_wechat_msg_2026''',                      # 微信回调验签 Token（非对称密钥性质，已在任务书公开，仅用于 GET/POST 签名校验）
+  '''dev-only-secret-change-me''',                # .env.example JWT_SECRET 占位值
+  '''dev-file-secret-change-me''',                # .env.example FILE_SIGN_SECRET 占位值
+  '''(?i)(example|placeholder|dummy|fake|changeme|change-me|your-[a-z-]+-here)''',  # 通用占位词
+]
+
+# 按目标规则放行：高熵规则在测试/文档路径下误报率高，交由上方 paths 收口；
+# 此处不放行任何真实密钥形态。

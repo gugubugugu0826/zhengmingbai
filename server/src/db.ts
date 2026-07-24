@@ -14,6 +14,7 @@ import { config } from './config.js';
 import { migrateV22 } from './migrations/v22-users-captcha.js';
 import { migrateV3 } from './migrations/v3-ops-photos.js';
 import { migrateV31T2iRefPhoto } from './migrations/v31-t2i-ref-photo.js';
+import { migrateV32UsersStatus } from './migrations/v32-users-status.js';
 
 fs.mkdirSync(path.dirname(config.dbFile), { recursive: true });
 
@@ -334,6 +335,9 @@ CREATE INDEX IF NOT EXISTS idx_t2i_plan ON t2i_tasks(plan_id);
 
   // ===== v3.1 D 板块增量迁移（t2i_tasks.ref_photo_key：图+文生图参考图） =====
   migrateV31T2iRefPhoto();
+
+  // ===== v3.2 增量迁移（users.status：用户封锁/解封，§5.2 D1） =====
+  migrateV32UsersStatus();
 }
 
 /** 受影响行数兜底（node:sqlite 各小版本 changes 返回 number | bigint 不一） */

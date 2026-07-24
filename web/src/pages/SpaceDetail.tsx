@@ -21,8 +21,9 @@ interface SpaceDetailResp {
   name: string;
   space_type: string;
   created_at: string;
-  session_count: number;
-  last_session_at: string | null;
+  /** v3.2 §4.3：后端 getSpaceDetail 已补返回（T01）；旧后端缺该字段时兜底 0，不再渲染 undefined */
+  session_count?: number;
+  last_session_at?: string | null;
   photos: string[];
   after_photos: string[];
   status: string;
@@ -93,7 +94,7 @@ export default function SpaceDetailPage(): JSX.Element {
     <div className="w-full max-w-4xl">
       <PageHeader
         title={detail.name}
-        subtitle={`${SPACE_TYPE_LABELS[detail.space_type] ?? '空间'} · 整理过 ${detail.session_count} 次`}
+        subtitle={`${SPACE_TYPE_LABELS[detail.space_type] ?? '空间'} · 整理过 ${detail.session_count ?? 0} 次`}
         back
       />
 
@@ -124,8 +125,15 @@ export default function SpaceDetailPage(): JSX.Element {
       </div>
 
       {/* 整理记录时间线 */}
-      <div className="mx-5 mt-5 md:mx-0">
-        <h2 className="mb-3 text-[16px] font-semibold text-warm">整理记录</h2>
+      <div className="mx-5 mt-6 md:mx-0">
+        <div className="mb-3 flex items-end justify-between">
+          <h2 className="text-[16px] font-semibold text-warm">整理记录</h2>
+          {detail.last_session_at ? (
+            <span className="text-[12px] text-warm-light">
+              最近一次：{formatDate(detail.last_session_at)}
+            </span>
+          ) : null}
+        </div>
         {history === null ? (
           <Loading text="正在翻记录…" />
         ) : history.length === 0 ? (

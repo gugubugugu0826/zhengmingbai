@@ -4,8 +4,9 @@
  * - 签名校验：Token + timestamp + nonce 字典序排序拼接后 sha1，与 signature 比对。
  *   Token 唯一来源为环境变量 WECHAT_MSG_TOKEN（config.wechatMsgToken），
  *   代码内不留明文默认值（安全红线，凭据轮转后的纪律）。
- * - 兼容明文模式先行：遇 <Encrypt>（安全模式加密体）记日志返 success，
- *   不实现 AES 解密（EncodingAESKey 走 WECHAT_MSG_AES_KEY，留待二期）。
+ * - 兼容模式（用户后台所选）：微信同时下发明文 + <Encrypt>，明文可用，按明文处理；
+ *   仅纯安全模式（body 仅 <Encrypt>、无明文字段）才记日志放行，不实现 AES 解密
+ *   （EncodingAESKey 走 WECHAT_MSG_AES_KEY，留待二期）。
  */
 import crypto from 'node:crypto';
 import { config } from '../../config.js';
@@ -47,10 +48,17 @@ export function verifyCallbackSignature(query: WechatCallbackQuery): boolean {
 export function handleCallbackMessage(rawXml: string): string {
   const message: WechatMessage = parseWechatXml(rawXml);
 
-  if (message.Encrypt) {
-    // 安全模式加密体：不实现 AES 解密，记日志放行
-    logger.info('微信回调为安全模式加密消息（<Encrypt>），暂不解密，直接应答 success');
+  // 兼容模式：明文与 <Encrypt> 并存，明文可用 → 按明文处理（见上方模块注释）。
+  // 仅当 body 只有 <Encrypt>（纯安全模式加密体、无明文字段）时才记日志放行（本期不实现 AES 解密）。
+  const hasPlaintext = Boolean(
+    message.MsgType || message.Event || message.FromUserName || message.ToUserName,
+  );
+  if (message.Encrypt && !hasPlaintext) {
+    logger.info('微信回调为安全模式纯加密消息（仅 <Encrypt>，无明文），暂不解密，应答 success');
     return 'success';
+  }
+  if (message.Encrypt) {
+    logger.info('微信回调为兼容模式（明文与 <Encrypt> 并存），按明文处理');
   }
 
   logger.info(
@@ -60,7 +68,7 @@ export function handleCallbackMessage(rawXml: string): string {
       from: message.FromUserName,
       msgId: message.MsgId,
     },
-    '微信回调消息（明文模式）',
+    '微信回调消息（明文/兼容模式）',
   );
   return 'success';
 }

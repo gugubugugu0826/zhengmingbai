@@ -22,6 +22,8 @@ export const API_CODES = {
   UNAUTHORIZED: 2001,
   /** 无权限 */
   FORBIDDEN: 2003,
+  /** 账号已被封禁（v3.2 §5.2，HTTP 403） */
+  BLOCKED: 2004,
   /** 图形码错误 */
   CAPTCHA_WRONG: 2101,
   /** 邮箱验证码错误或过期 */
@@ -93,6 +95,19 @@ const REQUEST_TIMEOUT_MS = 60000;
 
 /** 会话失效分支：双通道（C 端 / admin 端）隔离处理，axios 拦截器同款语义 */
 function handleAuthError(code: number): void {
+  // v3.2 §5.2：账号封禁（2004）——双通道都强制登出清 token，提示后回各自登录页
+  if (code === API_CODES.BLOCKED) {
+    if (window.location.pathname.startsWith('/admin')) {
+      adminTokenStore.clear();
+      window.location.href = '/admin';
+    } else {
+      tokenStore.clear();
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return;
+  }
   if (code !== API_CODES.UNAUTHORIZED && code !== API_CODES.FORBIDDEN) return;
   // /admin 会话失效：只清 admin token，由 AdminLogin 页跳回 /admin（不动 C 端登录态）
   if (window.location.pathname.startsWith('/admin')) {

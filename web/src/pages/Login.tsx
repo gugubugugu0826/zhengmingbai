@@ -3,12 +3,12 @@
  * - 收敛为两个 Tab：「邮箱验证码」「密码登录」（原邮箱密码+手机密码合并，
  *   账号框可输邮箱或手机号，按格式自动选择 login_type，后端两种凭证都认）
  * - 邮箱验证码 Tab：点「发送验证码」弹 CaptchaDialog 图形码弹窗，表单内不常驻图形码；
- *   登录提交复用同一张已消耗的图形码参数（后端校验链只认一次性，提交失败 2101 重开弹窗）
+ *   v3.2 §2.2：登录提交不再带图形码参数（后端 email_code 跳过图形码校验）
  * - 密码登录 Tab：三行式——账号 / 密码 / 常驻图形验证码（CaptchaInput）
  * - 加「忘记密码」入口 → /forgot-password
  * - 任何登录失败统一提示，不区分账号/密码/验证码错（A-12 防枚举）
  */
-import { useRef, useState, type JSX } from 'react';
+import { useRef, useState, type JSX, type KeyboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError, tokenStore } from '../api';
 import { AuthCard } from '../components/AuthCard';
@@ -37,7 +37,7 @@ export default function LoginPage(): JSX.Element {
   const [emailCode, setEmailCode] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [captchaOpen, setCaptchaOpen] = useState(false);
-  /** 发码成功后保留的图形码参数：提交登录时复用（后端图形码一用即废，链上仅校验一次） */
+  /** 发码成功标记：仅表示「验证码已发送」，v3.2 后登录提交不再携带图形码参数 */
   const [codeCaptcha, setCodeCaptcha] = useState<CaptchaValue | null>(null);
 
   // 密码登录 Tab 字段
@@ -120,12 +120,12 @@ export default function LoginPage(): JSX.Element {
         toast('请先点「发送验证码」获取邮箱验证码', 'error');
         return;
       }
+      // v3.2 §2.2：email_code 分支不再带图形码（后端已同步改为 email_code 跳过图形码），
+      // codeCaptcha 仅作为「验证码已发送」的本地标记
       body = {
         login_type: 'email_code',
         email,
         email_code: emailCode,
-        captcha_id: codeCaptcha.captchaId,
-        captcha_code: codeCaptcha.captchaCode,
       };
     } else {
       if (!account) {
@@ -171,14 +171,8 @@ export default function LoginPage(): JSX.Element {
       // 图形码一次性作废：密码登录失败后必须让用户重新过码
       if (tab === 'password') {
         captchaRef.current?.refresh();
-      } else if (err instanceof ApiError && err.code === 2101) {
-        // 邮箱码登录的图形码参数已失效：重开弹窗让用户重新发码
-        setCodeCaptcha(null);
-        setCaptchaOpen(true);
-        toast('图形验证码过期了，请重新发送验证码', 'error');
-        setSubmitting(false);
-        return;
       }
+      // v3.2 §2.2：email_code 登录不再传图形码，删掉 2101 → 重开弹窗 → 重发邮件码的死循环逻辑
       if (err instanceof ApiError) {
         // A-12 防枚举：2001 统一文案；2102 邮箱码错也给统一文案
         if (err.code === 2001 || err.code === 2102) {
@@ -200,6 +194,12 @@ export default function LoginPage(): JSX.Element {
 
   return (
     <AuthCard title="登录" subtitle="邮箱验证码或密码，任选一种回家">
+      {/* v3.2 §4.2：输入框回车=点登录；CaptchaDialog 打开时不响应（弹窗内部自理回车） */}
+      <div
+        onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === 'Enter' && !captchaOpen && !submitting) void submit();
+        }}
+      >
       {/* Tab 切换 */}
       <div className="mb-5 flex rounded-btn bg-soft/60 p-1">
         {TAB_LABELS.map((t) => (
@@ -301,6 +301,7 @@ export default function LoginPage(): JSX.Element {
         <Link to="/forgot-password" className="text-warm-light underline-offset-2 hover:text-primary">
           忘记密码？
         </Link>
+      </div>
       </div>
 
       <CaptchaDialog

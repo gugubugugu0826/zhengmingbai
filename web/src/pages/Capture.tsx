@@ -209,20 +209,21 @@ export default function CapturePage(): JSX.Element {
           </span>
         </div>
 
-        <div className="flex gap-3">
+        {/* v3.2 §4.4：拍照/相册区排版——等宽双键、统一高度与圆角，间隙 12px */}
+        <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            className="flex flex-1 items-center justify-center gap-2 rounded-btn bg-primary py-3.5 text-[15px] font-medium text-white active:bg-primary-dark"
+            className="flex min-h-[52px] items-center justify-center gap-2 rounded-btn bg-primary py-3.5 text-[15px] font-medium text-white active:bg-primary-dark"
             onClick={() => cameraInputRef.current?.click()}
           >
-            📷 拍照
+            <span className="text-lg leading-none">📷</span> 拍照
           </button>
           <button
             type="button"
-            className="flex flex-1 items-center justify-center gap-2 rounded-btn border border-primary bg-card py-3.5 text-[15px] font-medium text-primary active:bg-soft"
+            className="flex min-h-[52px] items-center justify-center gap-2 rounded-btn border border-primary bg-card py-3.5 text-[15px] font-medium text-primary active:bg-soft"
             onClick={() => albumInputRef.current?.click()}
           >
-            🖼️ 相册选择
+            <span className="text-lg leading-none">🖼️</span> 相册选择
           </button>
         </div>
         <input
@@ -312,6 +313,17 @@ export default function CapturePage(): JSX.Element {
         >
           好了，下一步（{photos.length} 张）
         </button>
+        {/* v3.2 §4.1：未选空间类型时的引导文案（温暖口语化） */}
+        {!spaceType && (
+          <p className="mt-2 text-center text-[13px] text-warm-light md:max-w-md md:mx-auto">
+            先在上面选一个要整理的房间或物品类型，我们就能往下走啦～
+          </p>
+        )}
+        {spaceType && photos.length === 0 && (
+          <p className="mt-2 text-center text-[13px] text-warm-light md:max-w-md md:mx-auto">
+            再拍至少 1 张照片，AI 才能看清现场哦～
+          </p>
+        )}
       </div>
     </div>
   );

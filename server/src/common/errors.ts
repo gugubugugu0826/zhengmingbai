@@ -23,6 +23,10 @@ export class BizError extends Error {
   static forbidden(message = '无权访问该资源'): BizError {
     return new BizError(2003, message, 403);
   }
+  /** v3.2 §5.2：账号封禁（2xxx 鉴权段新码 2004）；前端 api.ts 拦截后强制登出 */
+  static blocked(message = '账号已被封禁，如有疑问请联系客服'): BizError {
+    return new BizError(2004, message, 403);
+  }
   static insufficientPoints(need: number, balance: number): BizError {
     return new BizError(3001, `点数不足：本次需要 ${need} 点，当前余额 ${balance} 点`, 400);
   }

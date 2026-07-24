@@ -15,7 +15,12 @@ export type AdminAction =
   | 'admin_account_init'
   | 'admin_password_change'
   | 'admin_password_reset'
-  | 'legacy_user_bind';
+  | 'legacy_user_bind'
+  // ===== v3.2 T05 新增（§5.1 管理员增删 / §5.2 用户封锁解封） =====
+  | 'admin_add'
+  | 'admin_remove'
+  | 'user_block'
+  | 'user_unblock';
 
 export function writeAdminLog(
   adminUserId: number,

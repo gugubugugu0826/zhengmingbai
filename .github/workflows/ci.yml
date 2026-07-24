@@ -47,3 +47,22 @@ jobs:
       - name: 后端单元测试
         run: npx tsx --test 'src/**/*.test.ts'
         working-directory: server
+
+  # v3.2 T03（条目 3.2）：密钥扫描硬门禁——全量 git 历史 + 工作区，与 build/test 并行
+  # 背景：qa-admin-token.txt 有效 JWT 入仓事故（已 BFG 清史），此 job 防再犯
+  # allowlist 规则见仓库根 .gitleaks.toml（放行测试假 token / 文档 / 已知非密项）
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码（全历史，供 gitleaks 扫全量提交）
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks 密钥扫描
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          # 公开仓库/自研项目免费档，无需 GITLEAKS_LICENSE
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_ENABLE_COMMENTS: false
+          GITLEAKS_ENABLE_SUMMARY: true

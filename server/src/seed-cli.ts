@@ -108,8 +108,8 @@ function fixPrompts(): void {
 function seedV31AiConfigs(): void {
   putConfigIfAbsent('ai.provider', 'volcengine'); // volcengine | dashscope（百炼 fallback）
   putConfigIfAbsent('ai.image_model', 'doubao-seedream-5-0-pro-260628');
-  putConfigIfAbsent('ai.vision_model', 'doubao-vision-pro-32k'); // 待火山控制台确认后改一行
-  putConfigIfAbsent('ai.text_model', 'doubao-pro-32k'); // 待火山控制台确认后改一行
+  putConfigIfAbsent('ai.vision_model', 'doubao-seed-1-6-vision'); // v3.2：火山控制台已确认（对齐 llm/vision 客户端默认值）
+  putConfigIfAbsent('ai.text_model', 'Doubao-Seed-2.1-turbo'); // v3.2：火山控制台已确认（对齐 llm/vision 客户端默认值）
   putConfigIfAbsent('wechat.subscribe_template_id', ''); // 空 = 静默跳过（T05 留口子）
 }
 

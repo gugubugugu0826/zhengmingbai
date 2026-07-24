@@ -5,7 +5,7 @@
  * - 底部「已阅读并同意《用户协议》和《隐私政策》」勾选：默认不勾，不勾禁提交
  * - 注册开关被拒 code 2107 → 提示"暂停注册"；2108 = 手机号占用（v3 新语义）
  */
-import { useState, type JSX } from 'react';
+import { useState, type JSX, type KeyboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError, API_CODES, tokenStore } from '../api';
 import { AuthCard } from '../components/AuthCard';
@@ -242,7 +242,13 @@ export default function RegisterPage(): JSX.Element {
 
   return (
     <AuthCard title="注册整明白" subtitle="一个邮箱就能开始，送新人 20 点礼包">
-      <div className="space-y-4">
+      {/* v3.2 §4.2：输入框回车=点注册；CaptchaDialog 打开时不响应（弹窗内部自理回车） */}
+      <div
+        className="space-y-4"
+        onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === 'Enter' && !captchaOpen && !submitting && agreed) void submit();
+        }}
+      >
         {/* 邮箱 */}
         <div>
           <div className="mb-1 flex items-center justify-between">

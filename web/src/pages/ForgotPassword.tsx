@@ -5,7 +5,7 @@
  * → 输 6 位验证码 + 新密码（≥8 位含字母数字）+ 确认 → POST /auth/password-reset
  * → 重置成功回登录页。重置后旧密码立即失效（后端覆盖哈希天然生效）。
  */
-import { useState, type JSX } from 'react';
+import { useState, type JSX, type KeyboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { AuthCard } from '../components/AuthCard';
@@ -105,6 +105,12 @@ export default function ForgotPasswordPage(): JSX.Element {
 
   return (
     <AuthCard title="找回密码" subtitle="通过注册邮箱重置密码，重置后旧密码立即失效">
+      {/* v3.2 §4.2：输入框回车=点重置密码；CaptchaDialog 打开时不响应（弹窗内部自理回车） */}
+      <div
+        onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === 'Enter' && !captchaOpen && !submitting) void submit();
+        }}
+      >
       <label className="mb-1 block text-[13px] text-warm-light">注册邮箱</label>
       <input
         type="email"
@@ -183,6 +189,7 @@ export default function ForgotPasswordPage(): JSX.Element {
           回登录
         </Link>
       </p>
+      </div>
 
       <CaptchaDialog
         open={captchaOpen}

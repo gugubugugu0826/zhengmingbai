@@ -2,11 +2,12 @@
  * 管理员-用户管理（R34）：列表搜索排序、详情（余额+流水）、发放/扣减点数。
  * 点数变更走统一入口 changeBalance（事务 + 幂等唯一索引），成功后写 admin_logs。
  */
-import { db } from '../../db.js';
+import { db, nowIso } from '../../db.js';
 import { BizError } from '../../common/errors.js';
 import { maskEmail, maskPhone } from '../../common/mask.js';
 import { changeBalance, listTransactions, type PointsBizType } from '../points/service.js';
 import { writeAdminLog } from './logs.service.js';
+import { getUserById } from '../auth/service.js';
 
 /** BUG-3：管理端用户出参统一脱敏（phone/email 必过 mask，code review 卡点） */
 function maskUserRow<T extends { phone?: string | null; email?: string | null }>(row: T): T {
@@ -33,7 +34,7 @@ export function listUsers(q: AdminUserListQuery): { list: unknown[]; total: numb
   const offset = (q.page - 1) * q.pageSize;
   const list = db
     .prepare(
-      `SELECT u.id, u.phone, u.email, u.username, u.nickname, u.role, u.created_at,
+      `SELECT u.id, u.phone, u.email, u.username, u.nickname, u.role, u.status, u.created_at,
               COALESCE(pa.balance, 0) AS balance, COALESCE(pa.total_spent, 0) AS total_spent
        FROM users u LEFT JOIN points_account pa ON pa.user_id = u.id
        ${where} ORDER BY ${sortCol} ${orderDir} LIMIT ? OFFSET ?`,
@@ -52,7 +53,7 @@ export function userDetail(
 ): { user: unknown; transactions: { list: unknown[]; total: number } } {
   const user = db
     .prepare(
-      `SELECT u.id, u.phone, u.email, u.username, u.nickname, u.role, u.reminder_enabled, u.delete_after_analysis,
+      `SELECT u.id, u.phone, u.email, u.username, u.nickname, u.role, u.status, u.reminder_enabled, u.delete_after_analysis,
               u.created_at, COALESCE(pa.balance, 0) AS balance,
               COALESCE(pa.total_earned, 0) AS total_earned, COALESCE(pa.total_spent, 0) AS total_spent
        FROM users u LEFT JOIN points_account pa ON pa.user_id = u.id WHERE u.id = ?`,
@@ -88,4 +89,57 @@ export function grantPoints(
     reason,
   });
   return { balance: result.balance };
+}
+
+// ===================== v3.2 §5.2：用户封锁/解封（D2：仅超管可操作，与 5.1 同一闸） =====================
+
+/** 超管闸：不信任 JWT 之外的身份信息，每次操作现查 is_super（复用 reset-password 同款模式） */
+export function assertSuperAdmin(operatorId: number): void {
+  const me = getUserById(operatorId);
+  if (me.is_super !== 1) throw BizError.forbidden('仅超级管理员可操作');
+}
+
+/** 封锁用户：status='blocked'；已签发 token 不吊销，下次请求由 authMiddleware 点查拦截（D2） */
+export function blockUser(
+  adminId: number,
+  targetUserId: number,
+  reason: string,
+): { id: number; status: string } {
+  assertSuperAdmin(adminId);
+  const trimmed = reason?.trim();
+  if (!trimmed || trimmed.length > 200) throw BizError.param('封禁原因 1-200 个字哦');
+  const target = db
+    .prepare(`SELECT id, email, role, status FROM users WHERE id = ?`)
+    .get(targetUserId) as
+    | { id: number; email: string | null; role: string; status: string }
+    | undefined;
+  if (!target) throw BizError.notFound('用户不存在');
+  if (target.status === 'blocked') throw BizError.param('该用户已处于封禁状态');
+  db.prepare(`UPDATE users SET status = 'blocked', updated_at = ? WHERE id = ?`).run(
+    nowIso(),
+    targetUserId,
+  );
+  writeAdminLog(adminId, 'user_block', `user:${targetUserId}`, {
+    target_email: maskEmail(target.email),
+    reason: trimmed,
+  });
+  return { id: targetUserId, status: 'blocked' };
+}
+
+/** 解封用户：status='active'，下次登录/请求即恢复 */
+export function unblockUser(adminId: number, targetUserId: number): { id: number; status: string } {
+  assertSuperAdmin(adminId);
+  const target = db
+    .prepare(`SELECT id, email, status FROM users WHERE id = ?`)
+    .get(targetUserId) as { id: number; email: string | null; status: string } | undefined;
+  if (!target) throw BizError.notFound('用户不存在');
+  if (target.status !== 'blocked') throw BizError.param('该用户未被封禁');
+  db.prepare(`UPDATE users SET status = 'active', updated_at = ? WHERE id = ?`).run(
+    nowIso(),
+    targetUserId,
+  );
+  writeAdminLog(adminId, 'user_unblock', `user:${targetUserId}`, {
+    target_email: maskEmail(target.email),
+  });
+  return { id: targetUserId, status: 'active' };
 }

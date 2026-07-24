@@ -57,6 +57,8 @@ export function step3VerifyPassword(ticket: string, password: string): { user: U
   if (!verifyPassword(password, user.password_hash)) {
     return failStep3(password);
   }
+  // v3.2 D2：封禁的管理员同样拒签正式票据（请求路径另有 authMiddleware 点查兜底）
+  if (user.status === 'blocked') throw BizError.blocked();
   return { user, token: signToken(user.id, 'admin', 'admin') };
 }
 

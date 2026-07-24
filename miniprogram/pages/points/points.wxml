@@ -33,13 +33,15 @@
   <view wx:if="{{transactions.length === 0}}" class="empty-box">
     <view>还没有点数变动记录</view>
   </view>
-  <view wx:else class="card tx-card" wx:for="{{transactions}}" wx:key="id">
-    <view class="tx-info">
-      <view class="tx-reason">{{item.reason}}</view>
-      <view class="tx-time">{{item.timeText}}</view>
+  <block wx:else>
+    <view class="card tx-card" wx:for="{{transactions}}" wx:key="id">
+      <view class="tx-info">
+        <view class="tx-reason">{{item.reason}}</view>
+        <view class="tx-time">{{item.timeText}}</view>
+      </view>
+      <view class="tx-amount {{item.positive ? 'tx-positive' : 'tx-negative'}}">{{item.amountText}}</view>
     </view>
-    <view class="tx-amount {{item.positive ? 'tx-positive' : 'tx-negative'}}">{{item.amountText}}</view>
-  </view>
+  </block>
   <view class="load-more" wx:if="{{hasMore}}" bindtap="onLoadMore">
     {{loadingMore ? '加载中…' : '加载更多'}}
   </view>

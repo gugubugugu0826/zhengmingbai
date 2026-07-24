@@ -90,6 +90,8 @@ export interface SpaceDetail extends SpaceRow {
   after_photos: string[];
   /** 空间状态机口径：已采纳未开始=待执行；有勾选=执行中；全勾=已完成 */
   status: string;
+  /** 该空间关联会话数（v3.2：对齐 listSpaces 子查询口径，前端详情页需要） */
+  session_count: number;
 }
 
 /**
@@ -113,7 +115,19 @@ export function getSpaceDetail(userId: number, spaceId: number): SpaceDetail {
     if (row.kind === 'after') afterPhotos.push(storage.signedUrl(row.cos_key));
     else photos.push(storage.signedUrl(row.cos_key));
   }
-  return { ...space, photos, after_photos: afterPhotos, status: spaceStatus(userId, spaceId) };
+  // v3.2：补 session_count（对齐 listSpaces 的子查询口径，前端空间详情页展示整理次数）
+  const sessionCount = (
+    db.prepare(`SELECT COUNT(*) AS c FROM sessions WHERE space_id = ?`).get(spaceId) as {
+      c: number;
+    }
+  ).c;
+  return {
+    ...space,
+    photos,
+    after_photos: afterPhotos,
+    status: spaceStatus(userId, spaceId),
+    session_count: sessionCount,
+  };
 }
 
 /** 空间状态实时计算：最新已采纳（planned/executing/done）会话的清单勾选进度 */

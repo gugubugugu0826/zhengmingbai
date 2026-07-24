@@ -19,9 +19,83 @@ import {
   type AdminUserRow,
   type Paged,
 } from '../api';
-import { AdminEmpty, AdminModal, btnGhostCls, btnPrimaryCls, cardCls, inputCls, PageTitle, tableCls, tdCls, thCls } from '../ui';
+import { AdminEmpty, AdminModal, btnGhostCls, btnPrimaryCls, cardCls, inputCls, PageTitle, StatusBadge, tableCls, tdCls, thCls } from '../ui';
 
 const PAGE_SIZE = 20;
+
+/** v3.2 §5.2：封禁弹窗（原因必填 1-200 字，仅超管可操作——非超管提交时后端 2003 拦截并 toast） */
+function BlockModal({
+  user,
+  onClose,
+  onDone,
+}: {
+  user: AdminUserRow;
+  onClose: () => void;
+  onDone: () => void;
+}): JSX.Element {
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const displayName = user.email ?? fmtPhone(user.phone);
+
+  const submit = async (): Promise<void> => {
+    const trimmed = reason.trim();
+    if (!trimmed) {
+      toast('请填写封禁原因', 'error');
+      return;
+    }
+    if (trimmed.length > 200) {
+      toast('封禁原因最多 200 个字', 'error');
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.post(`/admin/users/${user.id}/block`, { reason: trimmed });
+      toast(`已封禁 ${displayName}，对方下次请求即被拦截`, 'success');
+      onDone();
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : '封禁失败，请稍后再试', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AdminModal open onClose={onClose} title={`封禁账号 · ${displayName}`}>
+      <div className="space-y-4">
+        <p className="text-[13px] text-warm-light">
+          封禁后该用户无法登录，已登录的会话在下次请求时即被拦截（准实时生效）；账号数据保留，可随时解封。
+        </p>
+        <div>
+          <div className="mb-1.5 text-[13px] font-medium text-warm">
+            封禁原因 <span className="text-danger">*</span>
+          </div>
+          <textarea
+            className={`${inputCls} w-full resize-none`}
+            rows={3}
+            maxLength={200}
+            placeholder="例如：恶意刷点 / 违规内容（会记入操作日志）"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+          <div className="mt-1 text-right text-[11px] text-warm-light">{reason.length}/200</div>
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button type="button" className={`${btnGhostCls} flex-1`} onClick={onClose}>
+            取消
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            className="flex-1 rounded-md bg-danger px-4 py-2 text-[13px] font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+            onClick={() => void submit()}
+          >
+            {busy ? '封禁中…' : '确认封禁'}
+          </button>
+        </div>
+      </div>
+    </AdminModal>
+  );
+}
 
 /** 发点/扣点弹层 */
 function GrantModal({
@@ -270,6 +344,24 @@ export default function AdminUsers(): JSX.Element {
   const [data, setData] = useState<Paged<AdminUserRow> | null>(null);
   const [granting, setGranting] = useState<AdminUserRow | null>(null);
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [blocking, setBlocking] = useState<AdminUserRow | null>(null);
+  const [unblockTarget, setUnblockTarget] = useState<AdminUserRow | null>(null);
+  const [unblockBusy, setUnblockBusy] = useState(false);
+
+  const doUnblock = async (): Promise<void> => {
+    if (!unblockTarget) return;
+    setUnblockBusy(true);
+    try {
+      await api.post(`/admin/users/${unblockTarget.id}/unblock`);
+      toast(`已解封 ${unblockTarget.email ?? fmtPhone(unblockTarget.phone)}`, 'success');
+      setUnblockTarget(null);
+      load();
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : '解封失败，请稍后再试', 'error');
+    } finally {
+      setUnblockBusy(false);
+    }
+  };
 
   const load = useCallback((): void => {
     const kw = keyword.trim();
@@ -337,6 +429,7 @@ export default function AdminUsers(): JSX.Element {
                 <th className={thCls}>注册时间</th>
                 <th className={thCls}>点数余额</th>
                 <th className={thCls}>累计消耗</th>
+                <th className={thCls}>状态</th>
                 <th className={thCls}>操作</th>
               </tr>
             </thead>
@@ -353,7 +446,14 @@ export default function AdminUsers(): JSX.Element {
                   <td className={`${tdCls} font-medium`}>{u.balance} 点</td>
                   <td className={tdCls}>{u.total_spent}</td>
                   <td className={tdCls}>
-                    <div className="flex gap-2">
+                    {u.status === 'blocked' ? (
+                      <StatusBadge kind="danger" text="已封禁" />
+                    ) : (
+                      <StatusBadge kind="success" text="正常" />
+                    )}
+                  </td>
+                  <td className={tdCls}>
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         className="rounded-md bg-primary px-3 py-1.5 text-[12px] text-white transition-colors hover:bg-primary-dark"
@@ -368,6 +468,23 @@ export default function AdminUsers(): JSX.Element {
                       >
                         查看
                       </button>
+                      {u.status === 'blocked' ? (
+                        <button
+                          type="button"
+                          className="rounded-md border border-sage-dark/40 px-3 py-1.5 text-[12px] text-sage-dark transition-colors hover:bg-sage/10"
+                          onClick={() => setUnblockTarget(u)}
+                        >
+                          解封
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="rounded-md border border-danger/40 px-3 py-1.5 text-[12px] text-danger transition-colors hover:bg-danger/5"
+                          onClick={() => setBlocking(u)}
+                        >
+                          封禁
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -395,6 +512,24 @@ export default function AdminUsers(): JSX.Element {
         />
       )}
       {detailId !== null && <DetailDrawer userId={detailId} onClose={() => setDetailId(null)} />}
+      {blocking && (
+        <BlockModal
+          user={blocking}
+          onClose={() => setBlocking(null)}
+          onDone={() => {
+            setBlocking(null);
+            load();
+          }}
+        />
+      )}
+      <ConfirmDialog
+        open={unblockTarget !== null}
+        onCancel={() => setUnblockTarget(null)}
+        onConfirm={() => void doUnblock()}
+        title="确认解封？"
+        desc={`解封后 ${unblockTarget?.email ?? ''} 将恢复登录与正常使用，操作会记入操作日志。`}
+        confirmText={unblockBusy ? '解封中…' : '确认解封'}
+      />
     </div>
   );
 }

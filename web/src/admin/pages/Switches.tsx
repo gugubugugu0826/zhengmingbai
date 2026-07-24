@@ -51,11 +51,11 @@ function parseMaintenance(raw: unknown): MaintenanceCfg {
   return { enabled: false, notice: DEFAULT_NOTICE };
 }
 
-/** 开关行 */
+/** 开关行（v3.2 §4.6：样式统一，开=primary/关=soft 清晰可辨，可点区域 ≥44px） */
 function Toggle({ checked, onChange, label, desc, disabled = false }: { checked: boolean; onChange: (v: boolean) => void; label: string; desc?: string; disabled?: boolean }): JSX.Element {
   return (
-    <div className="flex items-center justify-between py-2">
-      <div className="min-w-0 pr-4">
+    <div className="flex items-center justify-between gap-4 py-3">
+      <div className="min-w-0">
         <div className="text-[14px] text-warm">{label}</div>
         {desc ? <div className="mt-0.5 text-[12px] leading-5 text-warm-light">{desc}</div> : null}
       </div>
@@ -63,12 +63,25 @@ function Toggle({ checked, onChange, label, desc, disabled = false }: { checked:
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label}
         disabled={disabled}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${checked ? 'bg-primary' : 'bg-border-strong'}`}
+        className={`relative h-11 w-[72px] shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+          checked ? 'bg-primary' : 'bg-soft'
+        }`}
         onClick={() => onChange(!checked)}
       >
+        {/* 状态文字：开在左、关在右，与滑块位置错开 */}
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`}
+          className={`absolute top-1/2 -translate-y-1/2 text-[11px] font-medium ${
+            checked ? 'left-3 text-white' : 'right-2.5 text-warm-light'
+          }`}
+        >
+          {checked ? '开' : '关'}
+        </span>
+        <span
+          className={`absolute top-1 h-9 w-9 rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-[30px]' : 'translate-x-1'
+          }`}
         />
       </button>
     </div>

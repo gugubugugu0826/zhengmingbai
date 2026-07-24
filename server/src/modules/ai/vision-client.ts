@@ -19,7 +19,7 @@ export interface VisionMessage {
 }
 
 export async function callVisionModel(message: VisionMessage): Promise<string> {
-  const model = getConfig<string>('ai.vision_model', 'qwen-vl-plus');
+  const model = getConfig<string>('ai.vision_model', 'doubao-seed-1-6-vision');
 
   // 照片 id → 可拉图 URL。COS 通道直接给公网预签名 URL；本地通道（开发）百炼回源拉不到
   // localhost，退化为 base64 data URL（视觉确认阶段照片量小，可接受；生产走 COS 不受影响）。

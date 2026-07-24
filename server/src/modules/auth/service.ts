@@ -39,6 +39,8 @@ export interface UserRow {
   force_password_reset: number;
   password_hash: string | null;
   is_super: number;
+  /** v3.2 §5.2：'active'（默认）| 'blocked'，仅这两值 */
+  status: string;
   created_at: string;
 }
 
@@ -63,6 +65,8 @@ function failLogin(input: string): never {
 }
 
 function toAuthResult(user: UserRow): AuthResult {
+  // v3.2 D2：封禁账号拒绝签发 token（403 + 2004），请求路径另有 authMiddleware 点查兜底
+  if (user.status === 'blocked') throw BizError.blocked();
   return {
     user,
     token: signToken(user.id, user.role ?? 'user', 'user'),

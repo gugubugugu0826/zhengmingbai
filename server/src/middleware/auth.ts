@@ -11,6 +11,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
+import { db } from '../db.js';
 
 export type TokenScope = 'user' | 'admin_step2' | 'admin';
 
@@ -57,6 +58,22 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
       role?: string;
       scope?: TokenScope;
     };
+    // v3.2 D2：封禁点查——验签通过后按主键查 users.status（<0.1ms，WAL 读不阻塞），
+    // blocked 即 403+2004。已签发 token 不主动吊销，下次请求即被拦（准实时）；
+    // user 与 admin scope 同查同拦（防封 admin 后还能操作后台）。
+    const row = db.prepare(`SELECT status FROM users WHERE id = ?`).get(payload.uid) as
+      | { status: string }
+      | undefined;
+    if (!row) {
+      res.status(401).json({ code: 2001, data: null, message: '账号不存在，请重新登录' });
+      return;
+    }
+    if (row.status === 'blocked') {
+      res
+        .status(403)
+        .json({ code: 2004, data: null, message: '账号已被封禁，如有疑问请联系客服' });
+      return;
+    }
     req.userId = payload.uid;
     req.userRole = payload.role ?? 'user';
     req.userScope = payload.scope ?? 'user';

@@ -156,14 +156,23 @@ const loginSchema = z.object({
   phone: z.string().min(11).max(11).optional(),
   email_code: z.string().regex(/^\d{6}$/).optional(),
   password: z.string().min(1).max(64).optional(),
-  ...captchaFields,
+  // v3.2：图形码改可选——email_code 路径不强制（6 位邮件码本身是验证，发码时已验过图形码防刷）；
+  // 密码类登录（email_password/phone_password）仍强制，见下方 assertCaptcha 分派
+  captcha_id: z.string().min(1, '请先完成图形验证').optional(),
+  captcha_code: z.string().min(1, '请输入图形验证码').optional(),
 });
 
 /** POST /auth/login — 三方式统一入口；任何失败一律 401 + 2001 统一文案 */
 authRouter.post('/login', sensitiveLimiter, (req, res, next) => {
   try {
     const input = loginSchema.parse(req.body);
-    assertCaptcha(input.captcha_id, input.captcha_code);
+    // 图形码仅密码类登录强制；email_code 路径跳过（防刷已在 /auth/email-code 发码时验过图形码）
+    if (input.login_type === 'email_password' || input.login_type === 'phone_password') {
+      if (!input.captcha_id || !input.captcha_code) {
+        throw BizError.param('请先完成图形验证');
+      }
+      assertCaptcha(input.captcha_id, input.captcha_code);
+    }
 
     if (input.login_type.startsWith('email')) {
       if (!input.email) throw BizError.param('请输入邮箱');
@@ -344,6 +353,8 @@ export function publicUser(user: UserRow): Record<string, unknown> {
     privacy_agreed: user.privacy_agreed_at !== null,
     role: user.role ?? 'user',
     force_password_reset: user.force_password_reset ?? 0,
+    // v3.2 §5.2：账号状态（'active'|'blocked'），供前端封禁提示兜底
+    status: user.status ?? 'active',
   };
 }
 

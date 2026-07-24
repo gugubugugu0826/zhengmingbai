@@ -6,7 +6,8 @@ import { z } from 'zod';
 import { ok } from '../../common/response.js';
 import type { AuthRequest } from '../../middleware/auth.js';
 import { adminAuth } from './middleware.js';
-import { grantPoints, listUsers, userDetail } from './users.service.js';
+import { blockUser, grantPoints, listUsers, unblockUser, userDetail } from './users.service.js';
+import { addAdmin, removeAdmin } from './admins.service.js';
 import { createKnowledge, deleteKnowledge, updateKnowledge } from './knowledge.service.js';
 import { aiCosts, summary } from './dashboard.service.js';
 import { listAdminLogs, writeAdminLog } from './logs.service.js';
@@ -55,6 +56,23 @@ adminRouter.post('/users/:id/points', (req: AuthRequest, res) => {
     .parse(req.body);
   const result = grantPoints(req.userId!, Number(req.params.id), change, reason);
   ok(res, result, change > 0 ? '点数已发放' : '点数已扣减');
+});
+
+// ===== v3.2 §5.2：用户封锁/解封（仅超管，权限闸在 service 层现查 is_super） =====
+
+/** POST /admin/users/:id/block — 封禁（原因必填 1-200 字；已签发 token 下次请求即被拦，D2） */
+adminRouter.post('/users/:id/block', (req: AuthRequest, res) => {
+  const { reason } = z
+    .object({ reason: z.string().min(1, '请填写封禁原因').max(200) })
+    .parse(req.body);
+  const result = blockUser(req.userId!, Number(req.params.id), reason);
+  ok(res, result, '账号已封禁，该用户下次请求即被拦截');
+});
+
+/** POST /admin/users/:id/unblock — 解封（无 body） */
+adminRouter.post('/users/:id/unblock', (req: AuthRequest, res) => {
+  const result = unblockUser(req.userId!, Number(req.params.id));
+  ok(res, result, '账号已解封');
 });
 
 // ===== 知识库管理（R35） =====
@@ -303,6 +321,24 @@ adminRouter.get('/admins', (_req, res) => {
     created_at: string;
   }>;
   ok(res, { list: list.map((a) => ({ ...a, phone: maskPhone(a.phone), email: maskEmail(a.email) })) });
+});
+
+/** POST /admin/admins — v3.2 §5.1：仅超管，指定邮箱/手机号把已有用户提升为 admin */
+adminRouter.post('/admins', (req: AuthRequest, res) => {
+  const { identifier, nickname } = z
+    .object({
+      identifier: z.string().min(1, '请填写邮箱或手机号').max(254),
+      nickname: z.string().min(1).max(30).optional(),
+    })
+    .parse(req.body);
+  const result = addAdmin(req.userId!, identifier, nickname);
+  ok(res, result, '已添加为管理员，对方可凭邮箱+密码走 /admin 双因子登录');
+});
+
+/** DELETE /admin/admins/:id — v3.2 §5.1：仅超管，降级回 user；不能删自己；至少留 1 个超管 */
+adminRouter.delete('/admins/:id', (req: AuthRequest, res) => {
+  const result = removeAdmin(req.userId!, Number(req.params.id));
+  ok(res, result, '已移除管理员身份，账号本身保留为普通用户');
 });
 
 /** PUT /admin/admins/:id — 改管理员昵称 */

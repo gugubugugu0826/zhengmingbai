@@ -191,6 +191,132 @@ function NicknameCell({ admin, onSaved }: { admin: AdminRow; onSaved: () => void
   );
 }
 
+/** v3.2 §5.1：新增管理员弹窗（指定邮箱/手机号提升已有用户，仅超管可见入口） */
+function AddAdminModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }): JSX.Element {
+  const [identifier, setIdentifier] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (): Promise<void> => {
+    if (!identifier.trim()) {
+      toast('请填写邮箱或手机号', 'error');
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.post('/admin/admins', {
+        identifier: identifier.trim(),
+        ...(nickname.trim() ? { nickname: nickname.trim() } : {}),
+      });
+      toast('已添加为管理员，对方可凭邮箱+密码走 /admin 双因子登录', 'success');
+      onDone();
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : '添加失败，请稍后再试', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AdminModal open onClose={onClose} title="新增管理员">
+      <div className="space-y-4">
+        <p className="text-[13px] text-warm-light">
+          输入已注册用户的邮箱或手机号，将其提升为管理员；对方原有点数与数据保留。
+          未绑定邮箱的用户需先在「老用户迁移」完成绑定。
+        </p>
+        <div>
+          <div className="mb-1.5 text-[13px] font-medium text-warm">
+            邮箱 / 手机号 <span className="text-danger">*</span>
+          </div>
+          <input
+            className={`${inputCls} w-full`}
+            maxLength={254}
+            placeholder="例如 admin@example.com"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+          />
+        </div>
+        <div>
+          <div className="mb-1.5 text-[13px] font-medium text-warm">昵称（可选，默认沿用原昵称）</div>
+          <input
+            className={`${inputCls} w-full`}
+            maxLength={30}
+            placeholder="例如 运营小王"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button type="button" className={`${btnGhostCls} flex-1`} onClick={onClose}>
+            取消
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            className={`${btnPrimaryCls} flex-1`}
+            onClick={() => void submit()}
+          >
+            {busy ? '添加中…' : '确认添加'}
+          </button>
+        </div>
+      </div>
+    </AdminModal>
+  );
+}
+
+/** v3.2 §5.1：删除管理员二次确认弹窗（降级回普通用户，不删号；不能删自己/最后一名超管由后端守卫） */
+function RemoveAdminModal({
+  admin,
+  onClose,
+  onDone,
+}: {
+  admin: AdminRow;
+  onClose: () => void;
+  onDone: () => void;
+}): JSX.Element {
+  const [busy, setBusy] = useState(false);
+
+  const doRemove = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      await api.delete(`/admin/admins/${admin.id}`);
+      toast(`已移除 ${admin.nickname} 的管理员身份，账号保留为普通用户`, 'success');
+      onDone();
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : '移除失败，请稍后再试', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AdminModal open onClose={onClose} title={`移除管理员 · ${admin.nickname}`}>
+      <div className="space-y-4">
+        <p className="text-[13px] text-warm">
+          确定要移除 <span className="font-medium">{admin.nickname}</span>（
+          {admin.email ?? admin.phone ?? `ID ${admin.id}`}）的管理员身份吗？
+        </p>
+        <p className="text-[12px] text-warm-light">
+          移除后对方降级为普通用户，账号与数据保留，不能再登录 /admin 后台；操作会记入操作日志。
+        </p>
+        <div className="flex gap-2">
+          <button type="button" className={`${btnGhostCls} flex-1`} onClick={onClose}>
+            取消
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            className="flex-1 rounded-md bg-danger px-4 py-2 text-[13px] font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+            onClick={() => void doRemove()}
+          >
+            {busy ? '移除中…' : '确认移除'}
+          </button>
+        </div>
+      </div>
+    </AdminModal>
+  );
+}
+
 /** 重置密码确认/结果弹窗 */
 function ResetModal({ admin, onClose }: { admin: AdminRow; onClose: () => void }): JSX.Element {
   const [busy, setBusy] = useState(false);
@@ -254,7 +380,10 @@ function ResetModal({ admin, onClose }: { admin: AdminRow; onClose: () => void }
 export default function AdminAccount(): JSX.Element {
   const [list, setList] = useState<AdminRow[] | null>(null);
   const [resetTarget, setResetTarget] = useState<AdminRow | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<AdminRow | null>(null);
   const [myIsSuper, setMyIsSuper] = useState(false);
+  const myId = currentAdminId();
 
   const load = useCallback((): void => {
     api
@@ -281,11 +410,22 @@ export default function AdminAccount(): JSX.Element {
       <PasswordCard />
 
       <div className={cardCls}>
-        <div className="border-b border-border-subtle px-5 py-3.5">
-          <h3 className="text-[15px] font-semibold text-warm">管理员列表</h3>
-          <p className="mt-0.5 text-[12px] text-warm-light">
-            点击昵称可就地编辑；重置密码仅超级管理员可用；未迁移的管理员需先到「老用户迁移」完成邮箱绑定
-          </p>
+        <div className="flex items-center justify-between border-b border-border-subtle px-5 py-3.5">
+          <div>
+            <h3 className="text-[15px] font-semibold text-warm">管理员列表</h3>
+            <p className="mt-0.5 text-[12px] text-warm-light">
+              点击昵称可就地编辑；新增/删除/重置密码仅超级管理员可用；未迁移的管理员需先到「老用户迁移」完成邮箱绑定
+            </p>
+          </div>
+          {myIsSuper && (
+            <button
+              type="button"
+              className={btnPrimaryCls}
+              onClick={() => setAddOpen(true)}
+            >
+              ＋ 新增管理员
+            </button>
+          )}
         </div>
         {!list ? (
           <Loading />
@@ -327,13 +467,24 @@ export default function AdminAccount(): JSX.Element {
                   <td className={`${tdCls} whitespace-nowrap`}>{fmtTime(a.created_at)}</td>
                   <td className={tdCls}>
                     {myIsSuper && (
-                      <button
-                        type="button"
-                        className="rounded-md border border-border-subtle px-3 py-1.5 text-[12px] text-warm transition-colors hover:bg-soft"
-                        onClick={() => setResetTarget(a)}
-                      >
-                        重置密码
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="rounded-md border border-border-subtle px-3 py-1.5 text-[12px] text-warm transition-colors hover:bg-soft"
+                          onClick={() => setResetTarget(a)}
+                        >
+                          重置密码
+                        </button>
+                        {a.id !== myId && (
+                          <button
+                            type="button"
+                            className="rounded-md border border-danger/40 px-3 py-1.5 text-[12px] text-danger transition-colors hover:bg-danger/5"
+                            onClick={() => setRemoveTarget(a)}
+                          >
+                            删除
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -344,6 +495,25 @@ export default function AdminAccount(): JSX.Element {
       </div>
 
       {resetTarget && <ResetModal admin={resetTarget} onClose={() => setResetTarget(null)} />}
+      {addOpen && (
+        <AddAdminModal
+          onClose={() => setAddOpen(false)}
+          onDone={() => {
+            setAddOpen(false);
+            load();
+          }}
+        />
+      )}
+      {removeTarget && (
+        <RemoveAdminModal
+          admin={removeTarget}
+          onClose={() => setRemoveTarget(null)}
+          onDone={() => {
+            setRemoveTarget(null);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }
