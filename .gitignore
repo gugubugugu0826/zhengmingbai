@@ -44,10 +44,13 @@ coverage/
 # QA 临时脚本与测试产物（不入仓，保留正式 smoke.mjs）
 server/qa/
 server/qa-*.mts
+server/qa-*.mjs
+server/qa-*.txt
 server/qa-*-result.txt
 server/crash-check.mjs
 server/smoke-batch*.mjs
 server/smoke-qa-*.mjs
+server/smoke-*.mjs
 *-result.json
 
 # 临时
