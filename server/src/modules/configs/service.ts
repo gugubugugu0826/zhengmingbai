@@ -28,8 +28,8 @@ export function seedConfigs(): void {
     'points.rules': DEFAULT_POINTS_RULES,
     'payment.channel': envConfig.paymentChannel,
     'ai.mock': envConfig.aiMock,
-    'ai.vision_model': 'doubao-seed-1-6-vision',
-    'ai.text_model': 'Doubao-Seed-2.1-turbo',
+    'ai.vision_model': 'doubao-seed-2-1-turbo-260628',
+    'ai.text_model': 'doubao-seed-2-1-turbo-260628',
     'ai.t2i_enabled': false,
     'ai.base_url': envConfig.dashscopeBaseUrl,
     'ai.prompt.confirm':
