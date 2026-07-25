@@ -1,0 +1,18 @@
+# 「整明白」后端 systemd 单元（2026-07-24 自现网 /etc/systemd/system/zmb-server.service 取回归档）
+# 部署位置：/etc/systemd/system/zmb-server.service
+# 变更后：sudo systemctl daemon-reload && sudo systemctl restart zmb-server
+[Unit]
+Description=zhengmingbai server
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/zhengmingbai/server
+Environment=NODE_ENV=production
+ExecStart=/opt/zhengmingbai/server/node_modules/.bin/tsx src/index.ts
+Restart=always
+RestartSec=3
+MemoryMax=1200M
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

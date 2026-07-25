@@ -1,0 +1,19 @@
+{
+  "name": "zhengmingbai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "「整明白」AI 整理收纳助手 monorepo",
+  "workspaces": [
+    "server",
+    "web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace server",
+    "dev:web": "npm run dev --workspace web",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

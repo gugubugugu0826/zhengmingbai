@@ -1,0 +1,144 @@
+.login-page {
+  min-height: 100vh;
+  padding: 0 32rpx;
+  box-sizing: border-box;
+}
+
+.brand {
+  padding: 96rpx 0 48rpx;
+  text-align: center;
+}
+
+.brand-logo {
+  font-size: 80rpx;
+}
+
+.brand-name {
+  margin-top: 16rpx;
+  font-size: 44rpx;
+  font-weight: 600;
+  color: #7d5a2f;
+}
+
+.brand-slogan {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+.login-card {
+  padding: 40rpx 36rpx;
+}
+
+.login-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.login-subtitle {
+  margin-top: 8rpx;
+  margin-bottom: 32rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+.tabs {
+  display: flex;
+  background: rgba(243, 237, 229, 0.6);
+  border-radius: 24rpx;
+  padding: 8rpx;
+  margin-bottom: 40rpx;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 26rpx;
+  color: #8a8076;
+  border-radius: 24rpx;
+}
+
+.tab-active {
+  background: #ffffff;
+  color: #b08968;
+  font-weight: 500;
+  box-shadow: 0 2rpx 8rpx rgba(90, 82, 72, 0.08);
+}
+
+.mb-4 {
+  margin-bottom: 32rpx;
+}
+
+.code-row {
+  display: flex;
+  gap: 24rpx;
+  margin-bottom: 40rpx;
+}
+
+.code-input {
+  flex: 1;
+}
+
+.send-btn {
+  width: 224rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid #b08968;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  color: #b08968;
+}
+
+.send-btn-disabled {
+  border-color: #f3ede5;
+  color: #8a8076;
+}
+
+.captcha-box {
+  width: 224rpx;
+  height: 92rpx;
+  flex-shrink: 0;
+  border: 2rpx solid #f3ede5;
+  border-radius: 24rpx;
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.captcha-img {
+  width: 100%;
+  height: 100%;
+}
+
+.captcha-placeholder {
+  font-size: 22rpx;
+  color: #8a8076;
+}
+
+.submit-btn {
+  width: 100%;
+  box-sizing: border-box;
+  line-height: 1.4;
+}
+
+.bottom-row {
+  margin-top: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 26rpx;
+}
+
+.hint {
+  color: #8a8076;
+}
+
+.forgot {
+  color: #b08968;
+}

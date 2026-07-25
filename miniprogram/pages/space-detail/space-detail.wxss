@@ -1,0 +1,124 @@
+.page-sub {
+  margin-top: 8rpx;
+  margin-bottom: 24rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+.compare-card {
+  margin-bottom: 40rpx;
+}
+
+.compare-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.compare-sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+  line-height: 1.6;
+}
+
+.compare-group {
+  margin-top: 32rpx;
+}
+
+.compare-label-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.compare-count {
+  font-size: 24rpx;
+  color: #8a8076;
+}
+
+.photo-strip {
+  white-space: nowrap;
+}
+
+.photo-row {
+  display: inline-flex;
+  gap: 16rpx;
+  padding: 4rpx;
+}
+
+.photo-item {
+  width: 224rpx;
+  height: 224rpx;
+  flex-shrink: 0;
+  border-radius: 24rpx;
+  border: 2rpx solid #f3ede5;
+}
+
+.photo-empty {
+  height: 224rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #faf6ee;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+}
+
+.sec-title {
+  margin-bottom: 24rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #5a5248;
+}
+
+.record-card {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+  padding: 28rpx 32rpx;
+}
+
+.record-date {
+  width: 80rpx;
+  height: 80rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3ede5;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #5a5248;
+  text-align: center;
+}
+
+.record-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.record-title {
+  font-size: 28rpx;
+  color: #5a5248;
+}
+
+.record-meta {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+}
+
+.record-arrow {
+  flex-shrink: 0;
+  color: #8a8076;
+}
+
+.empty-hint {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+}

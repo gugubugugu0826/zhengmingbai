@@ -1,0 +1,26 @@
+/* 原生隐私政策样式 */
+.privacy-page {
+  padding: 32rpx 40rpx 64rpx;
+  box-sizing: border-box;
+}
+
+.privacy-p {
+  font-size: 28rpx;
+  color: #5a5248;
+  line-height: 2;
+  margin-bottom: 12rpx;
+}
+
+.privacy-lead {
+  margin-bottom: 24rpx;
+}
+
+.privacy-light {
+  color: #8a8076;
+}
+
+.privacy-date {
+  margin-top: 40rpx;
+  font-size: 24rpx;
+  color: #8a8076;
+}

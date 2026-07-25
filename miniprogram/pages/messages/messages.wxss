@@ -1,0 +1,109 @@
+.page-sub {
+  margin-top: 8rpx;
+  margin-bottom: 24rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+/* 筛选 Tab */
+.tab-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 32rpx;
+}
+
+.tab-chip {
+  padding: 12rpx 32rpx;
+  border-radius: 999rpx;
+  background: #ffffff;
+  box-shadow: 0 4rpx 16rpx rgba(90, 82, 72, 0.06);
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+.tab-chip-active {
+  background: #b08968;
+  color: #ffffff;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+/* 消息卡 */
+.msg-card {
+  display: flex;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.msg-unread {
+  border-left: 8rpx solid #b08968;
+}
+
+.msg-icon {
+  font-size: 40rpx;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.msg-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.msg-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.msg-title {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #5a5248;
+}
+
+.msg-content {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+  line-height: 1.6;
+}
+
+.msg-time {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #b8b0a6;
+}
+
+.msg-btns {
+  margin-top: 20rpx;
+  display: flex;
+  gap: 16rpx;
+}
+
+.msg-go {
+  padding: 12rpx 40rpx;
+  background: #b08968;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.msg-go:active {
+  background: #7d5a2f;
+}
+
+.msg-read {
+  padding: 12rpx 40rpx;
+  border: 2rpx solid #f3ede5;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  color: #8a8076;
+}
+
+.empty-hint {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+}

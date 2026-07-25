@@ -1,0 +1,144 @@
+<view class="confirm-page page-pad">
+  <!-- 加载 / 忙碌遮罩 -->
+  <view class="busy-mask" wx:if="{{loading || busy}}">
+    <view class="busy-box">
+      <view class="busy-spinner"></view>
+      <view class="busy-text">{{busyText || '正在打开确认页…'}}</view>
+    </view>
+  </view>
+
+  <!-- 步骤指示条 -->
+  <view class="step-bar">
+    <view
+      wx:for="{{[1, 2, 3]}}"
+      wx:key="*this"
+      class="step-seg {{step + 1 >= item ? 'step-seg-on' : ''}}"
+    ></view>
+  </view>
+
+  <!-- 步骤 A：偏好三件套（新流程第 0 步 / 已有会话第 2 步） -->
+  <block wx:if="{{(isNew && !session) || (!isNew && step === 2)}}">
+    <view class="sec-title">你的偏好</view>
+    <view class="sec-sub" wx:if="{{isNew}}">整理「{{spaceTypeLabel}}」之前，先告诉我你的喜好</view>
+
+    <!-- 丢弃模式 -->
+    <view class="pref-title">丢弃模式</view>
+    <view class="pref-grid">
+      <view
+        wx:for="{{discardModes}}"
+        wx:key="key"
+        class="pref-cell {{prefs.discardMode === item.key ? 'pref-cell-active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onPickDiscard"
+      >
+        <view class="pref-cell-title">{{item.label}}</view>
+        <view class="pref-cell-desc">{{item.desc}}</view>
+      </view>
+    </view>
+
+    <!-- 分析粒度 -->
+    <view class="pref-title">分析粒度</view>
+    <view class="pref-grid">
+      <view
+        wx:for="{{granularities}}"
+        wx:key="key"
+        class="pref-cell {{prefs.granularity === item.key ? 'pref-cell-active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onPickGranularity"
+      >
+        <view class="pref-cell-title">{{item.label}}</view>
+        <view class="pref-cell-desc">{{item.desc}}</view>
+        <view class="pref-points">{{item.points}} 点</view>
+      </view>
+    </view>
+
+    <!-- 输出形式 -->
+    <view class="pref-title">输出形式（可多选）</view>
+    <view
+      wx:for="{{outputFormOptions}}"
+      wx:key="key"
+      class="pref-row {{prefs.outputForms.indexOf(item.key) >= 0 ? 'pref-row-active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onToggleOutputForm"
+    >
+      <view class="pref-check {{prefs.outputForms.indexOf(item.key) >= 0 ? 'pref-check-on' : ''}}">
+        {{prefs.outputForms.indexOf(item.key) >= 0 ? '✓' : ''}}
+      </view>
+      <view class="pref-row-text">
+        <view class="pref-cell-title">{{item.label}}</view>
+        <view class="pref-cell-desc">{{item.desc}}</view>
+      </view>
+    </view>
+
+    <button
+      wx:if="{{isNew}}"
+      class="btn-primary main-btn {{!outputValid ? 'btn-disabled' : ''}}"
+      disabled="{{!outputValid}}"
+      bindtap="createSessionAndRun"
+    >继续</button>
+    <button
+      wx:else
+      class="btn-primary main-btn {{!outputValid ? 'btn-disabled' : ''}}"
+      disabled="{{!outputValid}}"
+      bindtap="submitAll"
+    >生成方案（余额 {{balance}} 点）</button>
+    <view class="valid-hint" wx:if="{{!outputValid}}">选 C 的话，记得再搭配 A 或 B 哦</view>
+  </block>
+
+  <!-- 步骤 B：我看到的范围（分组） -->
+  <block wx:elif="{{(isNew && step === 1) || (!isNew && step === 0)}}">
+    <view class="sec-title">我看到的范围</view>
+    <view class="sec-sub" wx:if="{{confirmResult}}">我把照片分了 {{confirmResult.groups.length}} 组，看看对不对～</view>
+    <view class="card group-card" wx:for="{{groupsView}}" wx:key="tag">
+      <view class="group-label">{{item.label}}</view>
+      <view class="group-photos">
+        <image
+          wx:for="{{item.photos}}"
+          wx:for-item="ph"
+          wx:key="index"
+          class="group-photo"
+          src="{{ph.url}}"
+          mode="aspectFill"
+        />
+      </view>
+    </view>
+    <button class="btn-primary main-btn" bindtap="onNextStep">继续</button>
+  </block>
+
+  <!-- 步骤 C：这些是什么（模糊物品问答） -->
+  <block wx:elif="{{(isNew && step === 2) || (!isNew && step === 1)}}">
+    <block wx:if="{{confirmResult && confirmResult.vague_items.length === 0}}">
+      <view class="card vague-empty">
+        <view class="vague-empty-emoji">👌</view>
+        <view class="vague-empty-title">没有认不出来的东西</view>
+        <view class="vague-empty-desc">照片都很清楚，直接下一步吧</view>
+      </view>
+    </block>
+    <block wx:elif="{{confirmResult}}">
+      <view class="sec-title">这些是什么？</view>
+      <view class="sec-sub">有几样东西我没认出来，告诉我它是啥，方案会更准～</view>
+      <view class="card vague-card" wx:for="{{vagueView}}" wx:key="id">
+        <image
+          wx:if="{{item.photoUrl}}"
+          class="vague-photo"
+          src="{{item.photoUrl}}"
+          mode="aspectFill"
+        />
+        <view class="vague-q">{{item.question || '这个东西我没认出来，它是什么呀？'}}</view>
+        <view class="vague-hint" wx:if="{{item.hint}}">提示：{{item.hint}}</view>
+        <view class="vague-input-row">
+          <input
+            class="input vague-input"
+            placeholder="比如：加湿器 / 囤的纸巾…"
+            value="{{answers[item.id]}}"
+            data-id="{{item.id}}"
+            bindinput="onAnswerInput"
+          />
+          <view class="vague-skip" data-id="{{item.id}}" bindtap="onSkipAnswer">跳过</view>
+        </view>
+      </view>
+    </block>
+    <button class="btn-primary main-btn" wx:if="{{isNew}}" bindtap="submitAll">生成方案（余额 {{balance}} 点）</button>
+    <button class="btn-primary main-btn" wx:else bindtap="onNextStep">继续</button>
+  </block>
+</view>
