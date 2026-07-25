@@ -204,7 +204,8 @@ sessionsRouter.post('/:id/analyze', sensitiveLimiter, async (req: AuthRequest, r
   try {
     const userId = req.userId!;
     const session = getOwnedSession(userId, Number(req.params.id));
-    if (!['confirming', 'uploading'].includes(session.status)) {
+    // v3.2.2：允许 confirming/uploading/analyzing 三种状态（retry 中间失败也可继续）
+    if (!['confirming', 'uploading', 'analyzing'].includes(session.status)) {
       // 幂等：重复点分析，已有方案则直接返回最新版，不重复扣点
       const existed = getLatestPlan(session.id);
       if (existed) {
