@@ -171,8 +171,14 @@ export async function chatCompletion(params: {
   const isVision = isVisionCall(params.messages);
   const originalModel = params.model;
 
+  // v3.2.2 P0：qwen-* 模型只属于 dashscope（火山没有，会 404）。直接走 dashscope 省一次废调用
+  const modelPrefersDashScope = originalModel.toLowerCase().startsWith('qwen');
+  const providerOrder: AiProvider[] = modelPrefersDashScope
+    ? (fallback === 'dashscope' ? ['dashscope', primary] : [primary, 'dashscope']).filter((p, i, arr) => arr.indexOf(p) === i)
+    : [primary, fallback];
+
   // v3.2.1：双 provider 依次尝试，任一成功即返回；4xx/BizError 不 fallback 直接抛
-  for (const provider of [primary, fallback]) {
+  for (const provider of providerOrder) {
     const ep = resolveEndpointFor(provider);
     if (!ep.apiKey) {
       // 无 key 跳过此 provider（仅日志记录，不阻塞 fallback 链路）
