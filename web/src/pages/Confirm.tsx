@@ -39,18 +39,24 @@ interface PreferenceState {
 }
 
 /** 步骤进度条（带步骤名 + 动画过渡） */
-const STEP_LABELS = ['选择偏好', 'AI 分组', '补充信息', '生成方案'] as const;
+// step 传 1-based（1=AI 分组, 2=AI 识别, 3=AI 方案），加载文案严格匹配当前步骤
+const STEP_LABELS = ['AI 分组', 'AI 识别', 'AI 方案'] as const;
+const STEP_LOADING = ['AI 分组猜测中…', 'AI 识别物品中…', 'AI 生成方案中…'] as const;
 
-function StepBar({ step, total, animating }: { step: number; total: number; animating?: boolean }): JSX.Element {
+function StepBar({ step, animating }: { step: number; animating?: boolean }): JSX.Element {
+  // step 可能为 0（旧版兼容）或 1-3，clamp 到 0-2
+  const idx = Math.max(0, Math.min(step - 1, STEP_LABELS.length - 1));
+  const label = STEP_LABELS[idx];
+  const loadingText = STEP_LOADING[idx];
   return (
     <div className="px-5 pb-3 pt-3">
-      {/* 状态文字 */}
+      {/* 状态文字（按当前步骤匹配，绝不混用） */}
       <div className="mb-2.5 flex items-center justify-between">
         <span className="text-[13px] font-medium text-primary">
-          {animating ? 'AI 正在识别照片内容…' : STEP_LABELS[step] ?? `第 ${step + 1} 步`}
+          {animating ? loadingText : label}
         </span>
         <span className="text-[12px] text-warm-light">
-          {step === 0 && !animating ? '1/3' : step === 1 ? '2/3' : '3/3'}
+          {idx + 1}/3
         </span>
       </div>
       {/* 三段式进度轨道 */}
@@ -394,7 +400,7 @@ export default function ConfirmPage(): JSX.Element {
     return (
       <div className="w-full max-w-3xl">
         <PageHeader title="你的偏好" onBack={() => navigate('/capture')} back />
-        <StepBar step={1} total={stepsTotal} />
+        <StepBar step={1} />
         <div className="px-5 pt-2 md:px-0">
           <PreferencePicker value={prefs} onChange={setPrefs} rules={rules} />
         </div>
@@ -558,7 +564,7 @@ export default function ConfirmPage(): JSX.Element {
   return (
     <div className="w-full max-w-3xl">
       <PageHeader title="AI 确认" subtitle="确认分组和偏好，AI 马上出方案" />
-      <StepBar step={shownStep} total={stepsTotal} animating={busy || (!confirmResult && !isNew)} />
+      <StepBar step={shownStep} animating={busy || (!confirmResult && !isNew)} />
       <div className="pt-2">{renderStep()}</div>
       <div className="px-5 pt-6 md:px-0">
         {isLastStep ? (
