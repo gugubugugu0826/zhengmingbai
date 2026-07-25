@@ -177,6 +177,16 @@ async function fetchRaw(
   }
 }
 
+/** nginx 反代 5xx 错误页（非 JSON）→ 用户友好文案 */
+function gatewayMessage(status: number): string {
+  const map: Record<number, string> = {
+    502: 'AI 服务暂时不可用，请稍后再试（照片已保存，可返回重新确认）',
+    503: '系统维护中，请稍后再来',
+    504: '处理超时，照片较多时可能需要更长时间，请重试',
+  };
+  return map[status] ?? `服务端错误(${status})，请稍后再试`;
+}
+
 /** 统一请求：解包 { code, data, message }，code !== 0 抛 ApiError */
 export async function request<T>(
   method: 'get' | 'post' | 'patch' | 'delete' | 'put',
@@ -197,7 +207,11 @@ export async function request<T>(
   // 非 2xx：后端统一响应格式里带上 code/message（axios 响应拦截器同款分支）
   if (!resp.ok) {
     const code = envelope?.code ?? -1;
-    const message = envelope?.message ?? '网络开了小差，请稍后再试';
+    // nginx 反代返回的 502/503/504 HTML 错误页无法 JSON 解析 → 按服务端不可用处理
+    const isGatewayError = resp.status >= 500 && !envelope;
+    const message = isGatewayError
+      ? gatewayMessage(resp.status)
+      : (envelope?.message ?? '网络开了小差，请稍后再试');
     if (code === API_CODES.MAINTENANCE) {
       handleMaintenance(envelope?.data, message);
     }

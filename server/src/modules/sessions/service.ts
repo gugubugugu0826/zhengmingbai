@@ -3,7 +3,7 @@
  * 状态机：uploading → confirming → analyzing → planned → executing → done
  * v3：saveAfterPhotos——执行清单收尾"拍张整理后的照片"（photos.kind='after'，复用上传管线）。
  */
-import { db, nowIso } from '../../db.js';
+import { db, nowIso, withTransaction } from '../../db.js';
 import { BizError } from '../../common/errors.js';
 import { storage } from '../upload/storage.js';
 import { parseBase64Image, validatePhoto } from '../upload/validate.js';
@@ -98,4 +98,48 @@ export async function saveAfterPhotos(
     );
   }
   return saved;
+}
+
+// ===================== 删除会话（级联清理） =====================
+
+/**
+ * 删除整理会话及全部关联数据（照片/方案/任务/提醒/成本日志）。
+ * 删除顺序：子表 → 父表，避免外键约束（SQLite REFERENCES 不强制但保持语义正确）。
+ * COS 照片文件同步删除。
+ */
+export function deleteSession(userId: number, sessionId: number): void {
+  // 整段包事务：PRAGMA foreign_keys = ON 已开启但外键未定义 ON DELETE CASCADE，
+  // 若中途失败会留孤儿数据；事务保证"要么全删、要么回滚"。
+  withTransaction(() => {
+    getOwnedSession(userId, sessionId); // 归属校验 + 存在性
+
+    // 1. 文生图任务
+    db.prepare(`DELETE FROM t2i_tasks WHERE session_id = ?`).run(sessionId);
+    // 2. 重生成任务
+    db.prepare(`DELETE FROM regen_tasks WHERE session_id = ?`).run(sessionId);
+    // 3. 方案项 → 方案
+    const planIds = db
+      .prepare(`SELECT id FROM plans WHERE session_id = ?`)
+      .all(sessionId) as Array<{ id: number }>;
+    for (const p of planIds) {
+      db.prepare(`DELETE FROM plan_items WHERE plan_id = ?`).run(p.id);
+    }
+    db.prepare(`DELETE FROM plans WHERE session_id = ?`).run(sessionId);
+    // 4. 提醒
+    db.prepare(`DELETE FROM reminders WHERE session_id = ?`).run(sessionId);
+    // 5. 服务预约（nullable 关联）
+    db.prepare(`DELETE FROM service_bookings WHERE session_id = ?`).run(sessionId);
+    // 6. AI 成本日志（nullable 关联）
+    db.prepare(`DELETE FROM ai_cost_logs WHERE session_id = ?`).run(sessionId);
+    // 7. 照片（含 COS 文件清理）
+    const photos = db
+      .prepare(`SELECT cos_key FROM photos WHERE session_id = ?`)
+      .all(sessionId) as Array<{ cos_key: string }>;
+    for (const p of photos) {
+      try { storage.deleteObject(p.cos_key); } catch { /* 已不存在则跳过 */ }
+    }
+    db.prepare(`DELETE FROM photos WHERE session_id = ?`).run(sessionId);
+    // 8. 会话本身
+    db.prepare(`DELETE FROM sessions WHERE id = ? AND user_id = ?`).run(sessionId, userId);
+  });
 }

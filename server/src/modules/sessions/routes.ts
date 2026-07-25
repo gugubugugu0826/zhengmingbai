@@ -10,7 +10,7 @@ import { ERR_NOT_IMPLEMENTED } from '../../common/messages.js';
 import type { AuthRequest } from '../../middleware/auth.js';
 import { sensitiveLimiter } from '../../middleware/rateLimit.js';
 import { db, nowIso } from '../../db.js';
-import { getOwnedSession, saveAfterPhotos, MAX_AFTER_PHOTOS, type SessionRow } from './service.js';
+import { getOwnedSession, saveAfterPhotos, MAX_AFTER_PHOTOS, deleteSession, type SessionRow } from './service.js';
 import { getSpace } from '../spaces/service.js';
 import {
   countSessionPhotos,
@@ -257,4 +257,10 @@ sessionsRouter.post('/:id/complete', (req: AuthRequest, res) => {
   // 幂等：同会话重复 complete 不重复安排
   scheduleReminder(req.userId!, session.id);
   ok(res, { completed: true }, '太棒了！这个空间整明白了');
+});
+
+/** DELETE /sessions/:id — 删除整理会话（级联清理照片/方案/任务/提醒） */
+sessionsRouter.delete('/:id', (req: AuthRequest, res) => {
+  deleteSession(req.userId!, Number(req.params.id));
+  ok(res, { deleted: true }, '整理记录已删除');
 });

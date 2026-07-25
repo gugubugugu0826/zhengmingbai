@@ -38,16 +38,40 @@ interface PreferenceState {
   outputForms: OutputForm[];
 }
 
-/** 步骤指示条 */
-function StepBar({ step, total }: { step: number; total: number }): JSX.Element {
+/** 步骤进度条（带步骤名 + 动画过渡） */
+const STEP_LABELS = ['选择偏好', 'AI 分组', '补充信息', '生成方案'] as const;
+
+function StepBar({ step, total, animating }: { step: number; total: number; animating?: boolean }): JSX.Element {
+  const pct = Math.round((step / total) * 100);
   return (
-    <div className="flex items-center gap-2 px-5 pb-2 pt-1">
-      {Array.from({ length: total }).map((_, i) => (
-        <span
-          key={i}
-          className={`h-1.5 flex-1 rounded-full ${i < step ? 'bg-primary' : 'bg-soft'}`}
+    <div className="px-5 pb-3 pt-1">
+      {/* 进度百分比 + 步骤名 */}
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[12px] font-medium text-primary">
+          {animating ? 'AI 正在处理照片…' : STEP_LABELS[step] ?? `第 ${step + 1} 步`}
+        </span>
+        <span className="text-[12px] text-warm-light">{pct}%</span>
+      </div>
+      {/* 轨道 */}
+      <div className="h-2 w-full overflow-hidden rounded-full bg-soft">
+        <div
+          className={`h-full rounded-full bg-primary transition-all duration-500 ease-out ${
+            animating ? 'animate-pulse' : ''
+          }`}
+          style={{ width: `${pct}%` }}
         />
-      ))}
+      </div>
+      {/* 步骤节点 */}
+      <div className="mt-1.5 flex justify-between px-0.5">
+        {Array.from({ length: total }).map((_, i) => (
+          <span
+            key={i}
+            className={`flex h-2 w-2 items-center justify-center rounded-full ${
+              i < step ? 'bg-primary' : i === step && animating ? 'bg-primary animate-pulse' : 'bg-soft'
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -258,8 +282,14 @@ export default function ConfirmPage(): JSX.Element {
       useDraftStore.getState().clearDraft();
       window.history.replaceState(null, '', `/confirm/${created.id}`);
       setStep(1);
-    } catch (err) {
-      toast(err instanceof ApiError ? err.message : '上传失败，请稍后再试', 'error');
+  } catch (err) {
+    const msg = err instanceof ApiError ? err.message : '上传失败，请稍后再试';
+    // 5xx / 网络层失败：照片可能已保存，引导用户刷新重试而非重新上传
+    if (err instanceof ApiError && err.code === -1) {
+      toast('照片已上传，AI 分析遇到问题。可刷新页面重试，或返回重新拍照', 'error');
+    } else {
+      toast(msg, 'error');
+    }
     } finally {
       setBusy(false);
     }
@@ -274,7 +304,12 @@ export default function ConfirmPage(): JSX.Element {
       setConfirmResult(result);
       setStep(1);
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'AI 确认失败，请稍后再试', 'error');
+      const msg = err instanceof ApiError ? err.message : 'AI 确认失败，请稍后再试';
+      if (err instanceof ApiError && err.code === -1) {
+        toast('AI 服务暂时繁忙，刷新页面重试即可（照片已保存）', 'error');
+      } else {
+        toast(msg, 'error');
+      }
     } finally {
       setBusy(false);
     }
@@ -371,7 +406,31 @@ export default function ConfirmPage(): JSX.Element {
 
   /** 分组卡片内容 */
   const renderGroups = (): JSX.Element => {
-    if (!confirmResult) return <Loading text="AI 正在看照片…" />;
+    if (!confirmResult) {
+      const dots = Array.from({ length: 3 }, (_, i) => (
+        <span key={i} className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-primary" style={{ animationDelay: `${i * 150}ms` }} />
+      ));
+      return (
+        <div className="flex flex-col items-center gap-4 py-12">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-tint">
+            <svg className="h-8 w-8 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" className="opacity-25" />
+              <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div className="text-center">
+            <p className="text-[15px] font-medium text-warm">AI 正在识别照片内容</p>
+            <p className="mt-1 flex items-center justify-center gap-1 text-[13px] text-warm-light">
+              {dots} 请稍等，通常需要 10~20 秒
+            </p>
+          </div>
+          {/* 迷你进度条动画 */}
+          <div className="w-48 overflow-hidden rounded-full bg-soft">
+            <div className="h-1.5 w-full animate-pulse rounded-full bg-primary" style={{ animationDuration: '2s' }} />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="grid gap-4 px-5 md:grid-cols-2 md:px-0">
         <div>
@@ -401,7 +460,14 @@ export default function ConfirmPage(): JSX.Element {
 
   /** 模糊物品问答 */
   const renderVague = (): JSX.Element => {
-    if (!confirmResult) return <Loading />;
+    if (!confirmResult) {
+      return (
+        <div className="flex flex-col items-center gap-3 py-12 text-warm-light">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-sage border-t-primary" />
+          <div className="text-sm">AI 正在分析…</div>
+        </div>
+      );
+    }
     if (confirmResult.vague_items.length === 0) {
       return (
         <div className="px-5">
@@ -477,7 +543,7 @@ export default function ConfirmPage(): JSX.Element {
   return (
     <div className="w-full max-w-3xl">
       <PageHeader title="AI 确认" subtitle="确认分组和偏好，AI 马上出方案" />
-      <StepBar step={shownStep} total={stepsTotal} />
+      <StepBar step={shownStep} total={stepsTotal} animating={busy || (!confirmResult && !isNew)} />
       <div className="pt-2">{renderStep()}</div>
       <div className="px-5 pt-6 md:px-0">
         {isLastStep ? (

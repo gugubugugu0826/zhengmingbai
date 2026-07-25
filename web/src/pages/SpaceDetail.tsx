@@ -63,6 +63,7 @@ export default function SpaceDetailPage(): JSX.Element {
   const navigate = useNavigate();
   const [detail, setDetail] = useState<SpaceDetailResp | null>(null);
   const [history, setHistory] = useState<SpaceHistoryItem[] | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     api
@@ -87,6 +88,22 @@ export default function SpaceDetailPage(): JSX.Element {
       navigate(`/plan/${record.id}`);
     } else {
       navigate(`/confirm/${record.id}`);
+    }
+  };
+
+  /** 删除整理记录（带确认 + 防重复点击） */
+  const handleDelete = async (e: React.MouseEvent, record: SpaceHistoryItem): Promise<void> => {
+    e.stopPropagation(); // 不触发卡片的 onClick 跳转
+    if (!window.confirm('确定要删除这条整理记录吗？关联的照片和方案也会一并删除，不可恢复。')) return;
+    setDeletingId(record.id);
+    try {
+      await api.delete(`/sessions/${record.id}`);
+      setHistory((prev) => (prev ? prev.filter((h) => h.id !== record.id) : null));
+      toast('记录已删除', 'success');
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : '删除失败，请稍后再试', 'error');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -141,26 +158,50 @@ export default function SpaceDetailPage(): JSX.Element {
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {history.map((record) => (
-              <button
+              <div
                 key={record.id}
-                type="button"
-                className="flex items-center gap-3 rounded-card bg-card p-4 text-left shadow-card transition-shadow hover:shadow-float"
-                onClick={() => openRecord(record)}
+                className="group relative rounded-card bg-card p-4 shadow-card transition-shadow hover:shadow-float"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-tag bg-soft text-[12px] font-medium text-warm">
-                  {formatDate(record.created_at)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14px] text-warm">
-                    {record.granularity === 'item' ? '物品级' : '区域级'}整理 · {record.photo_count} 张照片
+                {/* 删除按钮：hover 显示，右上角 */}
+                <button
+                  type="button"
+                  className="absolute right-2 top-2 z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-soft text-warm-light opacity-0 transition-opacity hover:bg-danger/10 hover:text-danger group-hover:opacity-100 disabled:opacity-50"
+                  onClick={(e) => void handleDelete(e, record)}
+                  disabled={deletingId === record.id}
+                  title="删除此记录"
+                >
+                  {deletingId === record.id ? (
+                    <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" className="opacity-25" />
+                      <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                  ) : (
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  )}
+                </button>
+                {/* 点击卡片其余区域跳转详情 */}
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 text-left"
+                  onClick={() => openRecord(record)}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-tag bg-soft text-[12px] font-medium text-warm">
+                    {formatDate(record.created_at)}
                   </div>
-                  <div className="text-[12px] text-warm-light">
-                    {SESSION_STATUS_LABELS[record.status] ?? record.status}
-                    {record.points_charged > 0 ? ` · 花了 ${record.points_charged} 点` : ''}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[14px] text-warm">
+                      {record.granularity === 'item' ? '物品级' : '区域级'}整理 · {record.photo_count} 张照片
+                    </div>
+                    <div className="text-[12px] text-warm-light">
+                      {SESSION_STATUS_LABELS[record.status] ?? record.status}
+                      {record.points_charged > 0 ? ` · 花了 ${record.points_charged} 点` : ''}
+                    </div>
                   </div>
-                </div>
-                <span className="text-warm-light">›</span>
-              </button>
+                  <span className="text-warm-light">›</span>
+                </button>
+              </div>
             ))}
           </div>
         )}
