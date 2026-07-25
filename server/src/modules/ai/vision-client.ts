@@ -19,8 +19,8 @@ export interface VisionMessage {
 }
 
 export async function callVisionModel(message: VisionMessage): Promise<string> {
-  // v3.2.2：切换到 doubao-seed-evolving-latest-version（更快 + 视觉质量更稳）
-  const model = getConfig<string>('ai.vision_model', 'doubao-seed-evolving-latest-version');
+  // v3.2.2 P0：视觉回退到千问 qwen-vl-plus（实测 30s 看 6 张图；豆包视觉偶发 60s+ abort）
+  const model = getConfig<string>('ai.vision_model', 'qwen-vl-plus');
 
   // 照片 id → base64 inline（避免依赖 Doubao 端去拉 COS URL；实测 inline 5s 内返回，URL 方式常卡 60s+）
   const parts: ChatContentPart[] = [{ type: 'text', text: message.prompt }];

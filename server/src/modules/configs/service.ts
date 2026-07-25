@@ -29,8 +29,9 @@ export function seedConfigs(): void {
     'payment.channel': envConfig.paymentChannel,
     'ai.mock': envConfig.aiMock,
     'ai.provider': 'volcengine',
-    // v3.2.2：切换到 Seed-Evolving（实测视觉/文本 4s 内，比 2-1-turbo 更稳更快）
-    'ai.vision_model': 'doubao-seed-evolving-latest-version',
+    // v3.2.2：视觉回退千问 qwen-vl-plus（实测 30s 看 6 张图稳定；豆包视觉偶发 60s+ abort）；
+    // 文本和图生图保持豆包（doubao-seed-evolving-latest-version / doubao-seedream-5-0-pro）
+    'ai.vision_model': 'qwen-vl-plus',
     'ai.text_model': 'doubao-seed-evolving-latest-version',
     'ai.t2i_enabled': false,
     'ai.base_url': envConfig.dashscopeBaseUrl,
