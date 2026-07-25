@@ -6,6 +6,7 @@
 import { config } from '../../config.js';
 import { getConfig } from '../configs/service.js';
 import { logAiCost, logger } from '../../common/logger.js';
+import { storage } from '../upload/storage.js';
 
 /** 素材图按空间类型匹配（10 类空间 → 4 张手绘风 SVG 场景，生成逻辑见 share/card-render） */
 const SCENE_BY_SPACE: Record<string, string> = {
@@ -118,6 +119,8 @@ ${actionLines || '（按整理方案执行）'}
 
 /**
  * 文生图（开关默认关）。失败一律回退素材图——插画是锦上添花，绝不能让主流程翻车。
+ * v3.2.1：t2i_enabled=true 时万相临时 URL 下载落存储通道（COS/local），
+ *         返回 cosKey 而非临时 URL；下载失败/过大同样回退素材图。
  */
 export async function generateIllustration(
   spaceType: string,
@@ -132,8 +135,14 @@ export async function generateIllustration(
   try {
     const prompt = `温馨手绘风格家居场景插画：${afterStateDesc.slice(0, 200)}`;
     const url = await wanxText2Image(prompt);
+    // v3.2.1 REQ-03：下载万相临时 URL → 检查大小 → 落存储通道 → 返回 cosKey
+    const imgRes = await fetch(url);
+    if (!imgRes.ok) throw new Error(`下载生成图失败 HTTP ${imgRes.status}`);
+    const buf = Buffer.from(await imgRes.arrayBuffer());
+    if (buf.length > 8 * 1024 * 1024) throw new Error('生成图过大');
+    const key = await storage.putObject(buf, 'png');
     logAiCost({ stage: 'illustration', model: 'wanx2.1-t2i-turbo', inputTokens: 0, outputTokens: 1, estCostYuan: 0.14, mock: false, sessionId: sessionId ?? null });
-    return url;
+    return key;
   } catch (err) {
     logger.warn({ err }, '文生图失败，回退素材插画');
     logAiCost({ stage: 'illustration', model: 'asset-library', inputTokens: 0, outputTokens: 0, estCostYuan: 0, mock: true, sessionId: sessionId ?? null });

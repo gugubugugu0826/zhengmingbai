@@ -3,6 +3,7 @@
  * 步骤勾选（进度云端保存）、顶部进度条、重进恢复、全部完成提示 + 会话完成回写。
  * 收尾项「拍张整理后的照片，存到我的家」：清单末尾常驻引导卡，支持拍照/相册上传
  * （POST /sessions/:id/after-photos，base64 数组，≤9 张），上传后存档到空间档案，
+import { IconCamera, IconPicture } from "../components/Icons";
  * 前后对比在空间详情页并排展示。
  */
 import { useCallback, useEffect, useRef, useState, type JSX } from 'react';

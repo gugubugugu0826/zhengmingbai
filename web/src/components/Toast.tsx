@@ -3,7 +3,7 @@ import { useToastStore } from '../stores/auth';
 const KIND_STYLES: Record<string, string> = {
   info: 'bg-warm text-white',
   success: 'bg-sage-dark text-white',
-  error: 'bg-[#B66A5A] text-white',
+  error: 'bg-honey text-white',
 };
 
 /** 全局 toast（手机容器内居中靠下） */

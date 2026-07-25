@@ -66,3 +66,20 @@ jobs:
           GITLEAKS_CONFIG: .gitleaks.toml
           GITLEAKS_ENABLE_COMMENTS: false
           GITLEAKS_ENABLE_SUMMARY: true
+
+  # v3.2.1 REQ-04：小程序编译检查（防 wx:else+wx:for 同标签等编译期逃逸）
+  miniprogram-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      - name: 小程序语法检查
+        run: |
+          echo "=== 检查 WXML wx:else/wx:for 同标签冲突 ==="
+          ! grep -rnE 'wx:else[^>]*wx:for|wx:for[^>]*wx:else' miniprogram/ && echo "PASS: 无同标签冲突" || (echo "FAIL: 发现 wx:else+wx:for 同标签" && exit 1)
+          echo "=== 检查 WXSS 硬编码色值 ==="
+          # 放行 app.wxss（token 定义处），业务 wxss 中不应有硬编码色值
+          grep -rnE '#[0-9A-Fa-f]{6}' miniprogram/ --include='*.wxss' | grep -v 'app.wxss' && echo "WARN: 业务样式含硬编码色值" || echo "PASS: 业务样式无硬编码色值"
+          echo "=== 检查 emoji 功能图标 ==="
+          # 仅检查 .wxml 中直接使用的 emoji（排除数据绑定 {{}}）
+          ! grep -rnP '[\x{1F300}-\x{1F9FF}]' miniprogram/ --include='*.wxml' && echo "PASS: 无 emoji" || echo "WARN: 含 emoji 字符"

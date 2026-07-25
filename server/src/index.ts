@@ -32,6 +32,7 @@ import { accountRouter } from './modules/account/routes.js';
 import { wechatRouter } from './modules/wechat/routes.js';
 import { initAdminAccounts } from './modules/auth/admin-init.js';
 import { startWorkers, stopWorkers } from './workers.js';
+import { isAiMock } from './modules/configs/service.js';
 
 migrate();
 // 启动兜底：部署后忘了跑 npm run init-admins 也能自愈（幂等，已初始化的跳过）
@@ -95,7 +96,15 @@ app.use(maintenanceMiddleware);
 
 /** 健康检查（无需鉴权） */
 app.get('/health', (_req, res) => {
-  res.json({ code: 0, data: { ok: true }, message: 'ok' });
+  const hasAiKey = !!(config.volcEngineApiKey || config.dashscopeApiKey);
+  res.json({
+    code: 0,
+    data: {
+      ok: true,
+      ai: { configured: hasAiKey, mock: isAiMock() },
+    },
+    message: 'ok',
+  });
 });
 
 // 无需 JWT 的路由

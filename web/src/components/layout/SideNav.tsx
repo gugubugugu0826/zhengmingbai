@@ -5,11 +5,12 @@
  * - 当前页高亮（原木棕左侧指示条 + 浅棕底），消息项带未读红点
  */
 import { NavLink } from 'react-router-dom';
+import { IconBasket, IconHome, IconCamera, IconFolder, IconBell, IconBag, IconUser } from '../Icons';
 
 export interface NavItem {
   to: string;
   label: string;
-  icon: string;
+  icon: JSX.Element;
   /** 未读消息红点（仅消息项使用） */
   badge?: number;
 }
@@ -22,12 +23,12 @@ interface SideNavProps {
 
 /** 6 项导航（任务书 §三 D1）：首页/开始整理/我的空间/消息/商城/账号 */
 export const NAV_ITEMS: NavItem[] = [
-  { to: '/home', label: '首页', icon: '🏠' },
-  { to: '/capture', label: '开始整理', icon: '📸' },
-  { to: '/spaces', label: '我的空间', icon: '🗂️' },
-  { to: '/messages', label: '消息', icon: '🔔' },
-  { to: '/store', label: '商城', icon: '🛍️' },
-  { to: '/account', label: '账号', icon: '👤' },
+  { to: '/home', label: '首页', icon: <IconHome size={20} /> },
+  { to: '/capture', label: '开始整理', icon: <IconCamera size={20} /> },
+  { to: '/spaces', label: '我的空间', icon: <IconFolder size={20} /> },
+  { to: '/messages', label: '消息', icon: <IconBell size={20} /> },
+  { to: '/store', label: '商城', icon: <IconBag size={20} /> },
+  { to: '/account', label: '账号', icon: <IconUser size={20} /> },
 ];
 
 export function SideNav({ collapsed = false, unreadCount = 0 }: SideNavProps): JSX.Element {
@@ -47,7 +48,7 @@ export function SideNav({ collapsed = false, unreadCount = 0 }: SideNavProps): J
         className={`mb-8 flex items-center gap-2 ${collapsed ? 'justify-center' : 'px-2'}`}
         title="整明白"
       >
-        <span className="text-[24px] leading-none">🧺</span>
+        <IconBasket size={28} />
         {!collapsed && (
           <span className="text-[18px] font-semibold tracking-wide text-warm">整明白</span>
         )}

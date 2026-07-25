@@ -8,6 +8,7 @@ import { fileToDataUrl } from '../api';
 import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
 import { toast, useAuthStore } from '../stores/auth';
+import { IconCamera, IconPicture } from '../components/Icons';
 import { useDraftStore } from '../stores/draft';
 import { SPACE_CHOICES, SPACE_TYPE_LABELS } from '../types';
 
@@ -216,14 +217,14 @@ export default function CapturePage(): JSX.Element {
             className="flex min-h-[52px] items-center justify-center gap-2 rounded-btn bg-primary py-3.5 text-[15px] font-medium text-white active:bg-primary-dark"
             onClick={() => cameraInputRef.current?.click()}
           >
-            <span className="text-lg leading-none">📷</span> 拍照
+            <IconCamera size={20} /> 拍照
           </button>
           <button
             type="button"
             className="flex min-h-[52px] items-center justify-center gap-2 rounded-btn border border-primary bg-card py-3.5 text-[15px] font-medium text-primary active:bg-soft"
             onClick={() => albumInputRef.current?.click()}
           >
-            <span className="text-lg leading-none">🖼️</span> 相册选择
+            <IconPicture size={20} /> 相册选择
           </button>
         </div>
         <input
@@ -274,7 +275,7 @@ export default function CapturePage(): JSX.Element {
 
         {/* 常驻隐私提示 */}
         <div className="mt-4 rounded-card bg-soft/70 px-4 py-3 text-[12px] leading-5 text-warm-light">
-          🔒 避免拍到证件、银行卡、他人面部。照片只用于本次整理分析，你可以随时删除。
+          避免拍到证件、银行卡、他人面部。照片只用于本次整理分析，你可以随时删除。
         </div>
       </div>
 

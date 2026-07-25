@@ -39,10 +39,10 @@ function matchTab(msg: MessageItem, tab: FilterTab): boolean {
 }
 
 const TYPE_ICONS: Record<FilterTab, string> = {
-  all: '📮',
-  reminder: '🔁',
-  points: '🪙',
-  system: '📢',
+  all: '',
+  reminder: '',
+  points: '',
+  system: '',
 };
 
 function iconOf(msg: MessageItem): string {

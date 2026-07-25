@@ -21,19 +21,19 @@ function formatLastTime(iso: string | null): string {
   return `${Math.floor(days / 30)} 个月前整理过`;
 }
 
-function spaceEmoji(spaceType: string): string {
+function spaceChar(spaceType: string): string {
   const map: Record<string, string> = {
-    kitchen: '🍳',
-    wardrobe: '👗',
-    bedroom: '🛏️',
-    study: '📚',
-    bathroom: '🛁',
-    living: '🛋️',
-    office: '💼',
-    shop: '🏪',
-    warehouse: '📦',
+    kitchen: '厨',
+    wardrobe: '衣',
+    bedroom: '卧',
+    study: '书',
+    bathroom: '卫',
+    living: '客',
+    office: '办',
+    shop: '店',
+    warehouse: '仓',
   };
-  return map[spaceType] ?? '🏠';
+  return map[spaceType] ?? '其';
 }
 
 export default function SpacesPage(): JSX.Element {
@@ -70,7 +70,7 @@ export default function SpacesPage(): JSX.Element {
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-btn bg-soft text-2xl">
-                    {spaceEmoji(space.space_type)}
+                    {spaceChar(space.space_type)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[15px] font-medium text-warm">{space.name}</div>

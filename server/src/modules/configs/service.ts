@@ -28,6 +28,7 @@ export function seedConfigs(): void {
     'points.rules': DEFAULT_POINTS_RULES,
     'payment.channel': envConfig.paymentChannel,
     'ai.mock': envConfig.aiMock,
+    'ai.provider': 'volcengine',
     'ai.vision_model': 'doubao-seed-2-1-turbo-260628',
     'ai.text_model': 'doubao-seed-2-1-turbo-260628',
     'ai.t2i_enabled': false,

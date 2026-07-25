@@ -174,7 +174,7 @@ export default function LegacyUsers(): JSX.Element {
       {/* 迁移窗口期醒目提示 */}
       <div className="rounded-lg border border-warning/40 bg-warning/10 p-4">
         <div className="flex items-start gap-2.5">
-          <span className="text-[18px] leading-none">⚠️</span>
+          ⚠
           <div className="min-w-0 flex-1">
             <div className="text-[14px] font-semibold text-warm">
               迁移窗口期：当前还有 {pending} 位老用户未迁移

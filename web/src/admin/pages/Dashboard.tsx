@@ -141,7 +141,7 @@ export default function AdminDashboard(): JSX.Element {
                     <td className={`${tdCls} ${over ? 'text-danger' : ''}`}>{row.output_tokens}</td>
                     <td className={`${tdCls} ${over ? 'font-semibold text-danger' : ''}`}>
                       ¥{row.est_cost_yuan.toFixed(4)}
-                      {over ? ' ⚠️' : ''}
+                      
                     </td>
                     <td className={`${tdCls} ${over ? 'text-danger' : ''}`}>{row.mock === 1 ? '是' : '否'}</td>
                   </tr>

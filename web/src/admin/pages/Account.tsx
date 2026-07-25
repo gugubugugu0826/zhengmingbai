@@ -159,7 +159,7 @@ function NicknameCell({ admin, onSaved }: { admin: AdminRow; onSaved: () => void
           setEditing(true);
         }}
       >
-        {admin.nickname || '-'} ✏️
+        {admin.nickname || '-'} 
       </button>
     );
   }

@@ -39,6 +39,9 @@ function resolveFromServer(p: string): string {
   return path.isAbsolute(p) ? p : path.join(SERVER_ROOT, p);
 }
 
+/** 检测是否有任一 AI API Key（火山 / 百炼），用于智能推断 aiMock 默认值 */
+const hasAnyAiKey = !!(process.env.VOLCENGINE_API_KEY || process.env.DASHSCOPE_API_KEY);
+
 export const config = {
   port: Number(process.env.PORT || 3001),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -46,8 +49,12 @@ export const config = {
   fileSignSecret: process.env.FILE_SIGN_SECRET || 'dev-file-secret-change-me',
   dbFile: resolveFromServer(process.env.DB_FILE || './data/zhengmingbai.db'),
   uploadDir: resolveFromServer(process.env.UPLOAD_DIR || './uploads'),
-  /** env 仅作 configs 表的初始兜底，运行期以 configs 表为准（改配置=改数据库，不发版） */
-  aiMock: (process.env.AI_MOCK || 'true') === 'true',
+  /** env 仅作 configs 表的初始兜底，运行期以 configs 表为准（改配置=改数据库，不发版）。
+   *   智能推断：有 Key → 默认非 mock；无 Key → 读 env（默认 true）；AI_MOCK=true 显式覆盖 */
+  aiMock: process.env.AI_MOCK === 'true' ? true
+    : process.env.AI_MOCK === 'false' ? false
+    : hasAnyAiKey ? false
+    : true,
   paymentChannel: process.env.PAYMENT_CHANNEL || 'mock',
   /** 存储通道（R45）：local|cos，进程级切换 */
   storageChannel: process.env.STORAGE_CHANNEL || 'local',
@@ -108,5 +115,9 @@ if (config.nodeEnv === 'production') {
     config.fileSignSecret === 'dev-file-secret-change-me'
   ) {
     throw new Error('生产环境必须通过 .env 配置 JWT_SECRET / FILE_SIGN_SECRET');
+  }
+  // 生产环境 AI 未配置：WARN + /health degraded（R50 强化）
+  if (!hasAnyAiKey) {
+    console.warn('[WARN] 生产环境未配置 VOLCENGINE_API_KEY 或 DASHSCOPE_API_KEY，AI 将使用 Mock 模式');
   }
 }

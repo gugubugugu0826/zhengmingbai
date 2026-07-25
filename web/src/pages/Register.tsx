@@ -229,12 +229,12 @@ export default function RegisterPage(): JSX.Element {
     if (state === 'ok') return <span className="text-[12px] text-sage-dark">✓ 可用</span>;
     if (state === 'invalid')
       return (
-        <span className="text-[12px] text-[#B66A5A]">
+        <span className="text-[12px] text-honey">
           {kind === 'username' ? '格式不对（1-20 字）' : '格式不对'}
         </span>
       );
     return (
-      <span className="text-[12px] text-[#B66A5A]">
+      <span className="text-[12px] text-honey">
         {kind === 'username' ? '已被占用' : kind === 'email' ? '已注册过' : '已被绑定'}
       </span>
     );
@@ -322,7 +322,7 @@ export default function RegisterPage(): JSX.Element {
             onChange={(e) => setPassword2(e.target.value)}
           />
           {password2 && password !== password2 && (
-            <p className="mt-1 text-[12px] text-[#B66A5A]">两次输入不一致</p>
+            <p className="mt-1 text-[12px] text-honey">两次输入不一致</p>
           )}
         </div>
 

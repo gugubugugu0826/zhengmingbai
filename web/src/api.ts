@@ -90,8 +90,8 @@ function isAdminApi(url: string | undefined): boolean {
   return !!url && url.startsWith('/admin/') && !url.startsWith('/admin/auth/');
 }
 
-/** 请求超时（ms）：对齐原 axios 配置 60s（AI 分析 Mock 秒回，真实模式预留长超时） */
-const REQUEST_TIMEOUT_MS = 60000;
+/** 请求超时（ms）：从 60s 收窄到 45s，覆盖后端 20s×2 轮 provider fallback + 5s 余量 */
+const REQUEST_TIMEOUT_MS = 45_000;
 
 /** 会话失效分支：双通道（C 端 / admin 端）隔离处理，axios 拦截器同款语义 */
 function handleAuthError(code: number): void {

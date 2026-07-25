@@ -5,7 +5,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { ok } from '../../common/response.js';
 import type { AuthRequest } from '../../middleware/auth.js';
-import { adminAuth } from './middleware.js';
+import { adminAuth, superAdmin } from './middleware.js';
 import { blockUser, grantPoints, listUsers, unblockUser, userDetail } from './users.service.js';
 import { addAdmin, removeAdmin } from './admins.service.js';
 import { createKnowledge, deleteKnowledge, updateKnowledge } from './knowledge.service.js';
@@ -50,7 +50,7 @@ adminRouter.get('/users/:id', (req, res) => {
   ok(res, userDetail(Number(req.params.id), page, pageSize));
 });
 
-adminRouter.post('/users/:id/points', (req: AuthRequest, res) => {
+adminRouter.post('/users/:id/points', superAdmin, (req: AuthRequest, res) => {
   const { change, reason } = z
     .object({ change: z.number().int().refine((n) => n !== 0, '点数变更不能为 0'), reason: z.string().min(1, '请填写备注原因').max(200) })
     .parse(req.body);
@@ -92,18 +92,18 @@ const kbSchema = z.object({
   is_active: z.union([z.literal(0), z.literal(1)]).optional(),
 });
 
-adminRouter.post('/knowledge', (req: AuthRequest, res) => {
+adminRouter.post('/knowledge', superAdmin, (req: AuthRequest, res) => {
   const input = kbSchema.parse(req.body);
   ok(res, createKnowledge(req.userId!, input), '知识库条目已新增，即时生效');
 });
 
-adminRouter.put('/knowledge/:id', (req: AuthRequest, res) => {
+adminRouter.put('/knowledge/:id', superAdmin, (req: AuthRequest, res) => {
   const input = kbSchema.partial().parse(req.body);
   updateKnowledge(req.userId!, Number(req.params.id), input);
   ok(res, { id: Number(req.params.id) }, '知识库条目已更新，即时生效');
 });
 
-adminRouter.delete('/knowledge/:id', (req: AuthRequest, res) => {
+adminRouter.delete('/knowledge/:id', superAdmin, (req: AuthRequest, res) => {
   deleteKnowledge(req.userId!, Number(req.params.id));
   ok(res, { id: Number(req.params.id) }, '知识库条目已删除');
 });
@@ -114,7 +114,7 @@ adminRouter.get('/configs', (_req, res) => {
   ok(res, listConfigs());
 });
 
-adminRouter.put('/configs', (req: AuthRequest, res) => {
+adminRouter.put('/configs', superAdmin, (req: AuthRequest, res) => {
   const { key, value } = z
     .object({ key: z.string().min(1).max(100), value: z.unknown() })
     .parse(req.body);
@@ -130,7 +130,7 @@ adminRouter.get('/packages', (_req, res) => {
   ok(res, db.prepare('SELECT * FROM packages ORDER BY sort, id').all());
 });
 
-adminRouter.put('/packages/:id', (req: AuthRequest, res) => {
+adminRouter.put('/packages/:id', superAdmin, (req: AuthRequest, res) => {
   const id = Number(req.params.id);
   const old = db.prepare('SELECT * FROM packages WHERE id = ?').get(id) as
     | Record<string, unknown>

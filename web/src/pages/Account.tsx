@@ -5,6 +5,7 @@
  * 更改邮箱走 CaptchaDialog 弹窗发码（scene=change_email），新邮箱失焦查重。
  */
 import { useEffect, useState, type JSX } from 'react';
+import { IconUser, IconCoin } from "../components/Icons";
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { CaptchaDialog } from '../components/CaptchaDialog';
@@ -80,8 +81,8 @@ export default function AccountPage(): JSX.Element {
       {/* 用户卡片 */}
       <div className="mx-5 mt-3 rounded-card bg-card p-5 shadow-card md:mx-0">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-soft text-2xl">
-            👤
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-soft text-primary">
+            <IconUser size={28} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[16px] font-semibold text-warm">
@@ -106,7 +107,7 @@ export default function AccountPage(): JSX.Element {
           <div className="mt-1 text-[28px] font-semibold leading-none">{balance}</div>
           <div className="mt-1.5 text-[12px] opacity-90">点数用于 AI 分析，重生成首次免费</div>
         </div>
-        <span className="text-[32px]">🪙</span>
+        <IconCoin size={36} />
       </button>
 
       {/* 账号管理 */}
@@ -151,7 +152,7 @@ export default function AccountPage(): JSX.Element {
       <div className="mx-5 mt-5 md:mx-0">
         <button
           type="button"
-          className="w-full rounded-card bg-card px-4 py-3.5 text-left text-[15px] font-medium text-[#B66A5A] shadow-card"
+          className="w-full rounded-card bg-card px-4 py-3.5 text-left text-[15px] font-medium text-honey shadow-card"
           onClick={() => setDialog('logout')}
         >
           退出登录
@@ -331,8 +332,8 @@ function UsernameDialog({
           <label className="text-[13px] text-warm-light">新用户名</label>
           {state === 'checking' && <span className="text-[12px] text-warm-light">检查中…</span>}
           {state === 'ok' && <span className="text-[12px] text-sage-dark">✓ 可用</span>}
-          {state === 'taken' && <span className="text-[12px] text-[#B66A5A]">已被占用</span>}
-          {state === 'invalid' && <span className="text-[12px] text-[#B66A5A]">格式不对</span>}
+          {state === 'taken' && <span className="text-[12px] text-honey">已被占用</span>}
+          {state === 'invalid' && <span className="text-[12px] text-honey">格式不对</span>}
         </div>
         <input
           type="text"
@@ -576,8 +577,8 @@ function EmailDialog({
             <label className="text-[13px] text-warm-light">新邮箱</label>
             {emailState === 'checking' && <span className="text-[12px] text-warm-light">检查中…</span>}
             {emailState === 'ok' && <span className="text-[12px] text-sage-dark">✓ 可用</span>}
-            {emailState === 'taken' && <span className="text-[12px] text-[#B66A5A]">已被绑定</span>}
-            {emailState === 'invalid' && <span className="text-[12px] text-[#B66A5A]">格式不对</span>}
+            {emailState === 'taken' && <span className="text-[12px] text-honey">已被绑定</span>}
+            {emailState === 'invalid' && <span className="text-[12px] text-honey">格式不对</span>}
           </div>
           <input
             type="email"
@@ -712,7 +713,7 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
             onChange={(e) => setNewPwd2(e.target.value)}
           />
           {newPwd2 && newPwd !== newPwd2 && (
-            <p className="mt-1 text-[12px] text-[#B66A5A]">两次输入不一致</p>
+            <p className="mt-1 text-[12px] text-honey">两次输入不一致</p>
           )}
         </div>
       </div>

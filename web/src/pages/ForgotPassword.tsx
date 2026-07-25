@@ -171,7 +171,7 @@ export default function ForgotPasswordPage(): JSX.Element {
         onChange={(e) => setPassword2(e.target.value)}
       />
       {password2 && password !== password2 && (
-        <p className="mb-1 text-[12px] text-[#B66A5A]">两次输入不一致</p>
+        <p className="mb-1 text-[12px] text-honey">两次输入不一致</p>
       )}
 
       <button

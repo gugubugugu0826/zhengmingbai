@@ -323,7 +323,10 @@ export default function ConfirmPage(): JSX.Element {
       toast('方案出来啦，看看合不合心意', 'success');
       navigate(`/plan/${session.id}`, { replace: true });
     } catch (err) {
-      if (err instanceof ApiError && err.code === 3001) {
+      if (err instanceof ApiError && err.code === -1) {
+        // v3.2.1：超时（AbortError/网络层失败统一 code=-1），给出友好提示
+        toast('AI 正在努力思考，请稍后再试', 'error');
+      } else if (err instanceof ApiError && err.code === 3001) {
         toast(err.message, 'error');
         navigate('/store');
       } else {

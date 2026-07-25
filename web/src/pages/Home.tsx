@@ -8,6 +8,7 @@ import { useEffect, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { Empty, Loading } from '../components/Loading';
+import { IconBell, IconCoin, IconFolder, IconBag, IconUser, IconBasket } from '../components/Icons';
 import { Modal } from '../components/Modal';
 import { toast, useAuthStore } from '../stores/auth';
 import { SPACE_TYPE_LABELS, type PublicUser, type Space } from '../types';
@@ -32,20 +33,20 @@ function formatLastTime(iso: string | null): string {
   return `${Math.floor(days / 30)} 个月前整理过`;
 }
 
-/** 空间类型 emoji（与 Capture 页一致） */
-function spaceEmoji(spaceType: string): string {
+/** 空间类型汉字图标（与 Capture 页一致，设计稿规范：汉字圆形徽章） */
+function spaceChar(spaceType: string): string {
   const map: Record<string, string> = {
-    kitchen: '🍳',
-    wardrobe: '👗',
-    bedroom: '🛏️',
-    study: '📚',
-    bathroom: '🛁',
-    living: '🛋️',
-    office: '💼',
-    shop: '🏪',
-    warehouse: '📦',
+    kitchen: '厨',
+    wardrobe: '衣',
+    bedroom: '卧',
+    study: '书',
+    bathroom: '卫',
+    living: '客',
+    office: '办',
+    shop: '店',
+    warehouse: '仓',
   };
-  return map[spaceType] ?? '🏠';
+  return map[spaceType] ?? '其';
 }
 
 /** 隐私政策弹窗（R19）：同意落 privacy_agreed_at，不同意退出到登录页 */
@@ -164,10 +165,10 @@ export default function HomePage(): JSX.Element {
         <button
           type="button"
           aria-label="站内消息"
-          className="relative text-[22px] md:hidden"
+          className="relative text-warm-secondary md:hidden"
           onClick={() => navigate('/messages')}
         >
-          🔔
+          <IconBell size={22} />
           {unread > 0 && (
             <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium leading-none text-white">
               {unread > 99 ? '99+' : unread}
@@ -240,7 +241,7 @@ export default function HomePage(): JSX.Element {
                       onClick={() => navigate(`/spaces/${space.id}`)}
                     >
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-btn bg-soft text-2xl">
-                        {spaceEmoji(space.space_type)}
+                        {spaceChar(space.space_type)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[15px] font-medium text-warm">{space.name}</div>
@@ -269,7 +270,7 @@ export default function HomePage(): JSX.Element {
                 <div className="text-[12px] text-warm-light">我的点数</div>
                 <div className="mt-0.5 text-[24px] font-semibold text-primary-dark">{balance}</div>
               </div>
-              <span className="text-[26px]">🪙</span>
+              <IconCoin size={30} />
             </div>
             <div className="mt-1 text-[12px] text-warm-light">
               {balance >= 10 ? '够做一次完整的整理啦～' : '快用完啦，去商城看看'}
@@ -281,10 +282,10 @@ export default function HomePage(): JSX.Element {
             <h3 className="mb-3 text-[14px] font-semibold text-warm">快捷入口</h3>
             <div className="grid grid-cols-4 gap-2 md:grid-cols-2">
               {[
-                { to: '/capture', icon: '📸', label: '开始整理' },
-                { to: '/spaces', icon: '🗂️', label: '我的空间' },
-                { to: '/store', icon: '🛍️', label: '商城' },
-                { to: '/account', icon: '👤', label: '账号' },
+                { to: '/capture', icon: <IconCamera size={20} />, label: '开始整理' },
+                { to: '/spaces', icon: <IconFolder size={20} />, label: '我的空间' },
+                { to: '/store', icon: <IconBag size={20} />, label: '商城' },
+                { to: '/account', icon: <IconUser size={20} />, label: '账号' },
               ].map((item) => (
                 <button
                   key={item.to}
@@ -292,7 +293,7 @@ export default function HomePage(): JSX.Element {
                   className="flex flex-col items-center gap-1 rounded-btn bg-cream py-3 text-[12px] text-warm transition-colors hover:bg-tint"
                   onClick={() => navigate(item.to)}
                 >
-                  <span className="text-[20px]">{item.icon}</span>
+                  {item.icon}
                   {item.label}
                 </button>
               ))}

@@ -20,7 +20,7 @@ export function PageHeader({ title, subtitle, right, onBack, back }: PageHeaderP
   const navigate = useNavigate();
   const showBack = back === true;
   return (
-    <div className="sticky top-0 z-20 flex items-center gap-2 bg-cream/95 px-5 py-3 backdrop-blur md:px-5 md:py-3">
+    <div className="sticky top-0 z-20 flex items-center gap-2 bg-cream px-5 py-3 border-b border-border-subtle md:px-5 md:py-3">
       <button
         type="button"
         aria-label="返回"
