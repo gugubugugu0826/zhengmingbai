@@ -118,7 +118,7 @@ async function singleAttempt(
   body: string,
 ): Promise<ChatResult> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 60_000);
+  const timer = setTimeout(() => controller.abort(), 120_000);
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -182,28 +182,35 @@ export async function chatCompletion(params: {
     const url = `${ep.baseUrl.replace(/\/+$/, '')}/chat/completions`;
     const mappedModel = mapModelForProvider(originalModel, provider, isVision);
 
-    try {
-      return await singleAttempt(url, ep.apiKey, body);
-    } catch (err) {
-      // BizError（4xx/鉴权/参数）是调用方问题，不 fallback 直接抛
-      if (err instanceof BizError) throw err;
-
-      if (provider === primary) {
-        // 主 provider 失败：记录 fallback 事件，继续尝试 fallback
+    // v3.2.2：单 provider 内重试 1 次（针对偶发抖动），不重试仍失败才走 fallback
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await singleAttempt(url, ep.apiKey, body);
+      } catch (err) {
+        if (err instanceof BizError) throw err;
+        lastErr = err;
         logger.warn({
-          event: 'ai_fallback',
-          from: primary,
-          to: fallback,
-          originalModel,
-          fallbackModel: mapModelForProvider(originalModel, fallback, isVision),
-          reason: err instanceof Error ? err.message : String(err),
-        }, 'AI provider fallback 触发');
-        continue;
+          attempt: provider,
+          retry: attempt,
+          bodyMb: Math.round(body.length / 1024 / 1024 * 10) / 10,
+          errName: err instanceof Error ? err.name : typeof err,
+          errMsg: err instanceof Error ? err.message : String(err),
+        }, 'AI 单次调用失败');
       }
-
-      // fallback 也失败：最终失败
-      throw BizError.ai('AI 服务暂时繁忙，请稍后再试');
     }
+    if (provider === primary) {
+      logger.warn({
+        event: 'ai_fallback',
+        from: primary,
+        to: fallback,
+        originalModel,
+        fallbackModel: mapModelForProvider(originalModel, fallback, isVision),
+        reason: lastErr instanceof Error ? lastErr.message : String(lastErr),
+      }, 'AI provider fallback 触发');
+      continue;
+    }
+    throw BizError.ai('AI 服务暂时繁忙，请稍后再试');
   }
 
   // 两个 provider 都无 key 才会走到这里
