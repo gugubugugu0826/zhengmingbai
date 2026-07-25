@@ -1,14 +1,36 @@
 /**
  * t2i-client.ts 单元测试（v3.2.1 REQ-04）。
  * 测试 pickIllustration、buildT2iPrompt、buildImagePrompt 等工具函数。
+ *
+ * 注意：buildT2iPrompt() 依赖 configs 表（t2iStylePrefix 读 ai.prompt.t2i）。
+ * before() 建立独立测试库并执行 migrate()。模块采用动态 import，
+ * 确保 db.js 在 DB_FILE 设定后再加载（与 block-admins.test.ts 一致），
+ * 避免 CI 全新检出时 no such table: configs。
  */
-import { describe, it } from 'node:test';
+import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  pickIllustration,
-  buildT2iPrompt,
-  buildImagePrompt,
-} from './t2i-client.js';
+import fs from 'node:fs';
+
+const TEST_DB = './data/test-t2i-client.db';
+
+let pickIllustration: (typeof import('./t2i-client.js'))['pickIllustration'];
+let buildT2iPrompt: (typeof import('./t2i-client.js'))['buildT2iPrompt'];
+let buildImagePrompt: (typeof import('./t2i-client.js'))['buildImagePrompt'];
+
+before(async () => {
+  process.env.DB_FILE = TEST_DB;
+  process.env.VERIFICATION_CHANNEL = 'mock';
+  for (const suffix of ['', '-shm', '-wal']) {
+    try {
+      fs.unlinkSync(TEST_DB + suffix);
+    } catch {
+      /* 测试库不存在则忽略 */
+    }
+  }
+  const { migrate } = await import('../../db.js');
+  migrate();
+  ({ pickIllustration, buildT2iPrompt, buildImagePrompt } = await import('./t2i-client.js'));
+});
 
 describe('pickIllustration 空间类型匹配', () => {
   it('kitchen → kitchen.svg', () => {
