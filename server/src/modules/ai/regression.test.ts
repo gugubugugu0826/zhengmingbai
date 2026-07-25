@@ -14,7 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
 describe('v3.2 P0 回归断言', () => {
-  it('AI 模型默认值为 doubao（非 qwen-*）', () => {
+  it('AI 模型默认值为 doubao Seed-Evolving（v3.2.2 切换）', () => {
     // 读取 configs/service.ts 确认 seed 默认值
     const servicePath = path.join(__dirname, '..', 'configs', 'service.ts');
     const content = fs.readFileSync(servicePath, 'utf-8');
@@ -22,10 +22,14 @@ describe('v3.2 P0 回归断言', () => {
     const textMatch = content.match(/'ai\.text_model':\s*'([^']+)'/);
     assert.ok(visMatch, '应包含 ai.vision_model 配置');
     assert.ok(textMatch, '应包含 ai.text_model 配置');
-    assert.equal(visMatch![1], 'doubao-seed-2-1-turbo-260628',
-      'vision_model 默认应为 doubao 模型');
-    assert.equal(textMatch![1], 'doubao-seed-2-1-turbo-260628',
-      'text_model 默认应为 doubao 模型');
+    // v3.2.2 P0：从 doubao-seed-2-1-turbo 切换到 doubao-seed-evolving（更快）
+    assert.equal(visMatch![1], 'doubao-seed-evolving-latest-version',
+      'vision_model 默认应为 doubao-seed-evolving-latest-version');
+    assert.equal(textMatch![1], 'doubao-seed-evolving-latest-version',
+      'text_model 默认应为 doubao-seed-evolving-latest-version');
+    // 防退化到 qwen（千问）模型
+    assert.ok(!visMatch![1].startsWith('qwen'), 'vision_model 不应是 qwen-*');
+    assert.ok(!textMatch![1].startsWith('qwen'), 'text_model 不应是 qwen-*');
   });
 
   it('email_code 登录不需要 captcha_required 字段', () => {

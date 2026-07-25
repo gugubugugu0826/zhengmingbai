@@ -8,7 +8,7 @@ import { useEffect, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { Empty, Loading } from '../components/Loading';
-import { IconBell, IconCoin, IconFolder, IconBag, IconUser, IconBasket } from '../components/Icons';
+import { IconBell, IconCamera, IconCoin, IconFolder, IconBag, IconPicture, IconUser, IconBasket } from '../components/Icons';
 import { Modal } from '../components/Modal';
 import { toast, useAuthStore } from '../stores/auth';
 import { SPACE_TYPE_LABELS, type PublicUser, type Space } from '../types';
