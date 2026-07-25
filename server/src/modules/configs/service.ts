@@ -29,8 +29,9 @@ export function seedConfigs(): void {
     'payment.channel': envConfig.paymentChannel,
     'ai.mock': envConfig.aiMock,
     'ai.provider': 'volcengine',
-    'ai.vision_model': 'doubao-seed-2-1-turbo-260628',
-    'ai.text_model': 'doubao-seed-2-1-turbo-260628',
+    // v3.2.2：切换到 Seed-Evolving（实测视觉/文本 4s 内，比 2-1-turbo 更稳更快）
+    'ai.vision_model': 'doubao-seed-evolving-latest-version',
+    'ai.text_model': 'doubao-seed-evolving-latest-version',
     'ai.t2i_enabled': false,
     'ai.base_url': envConfig.dashscopeBaseUrl,
     'ai.prompt.confirm':

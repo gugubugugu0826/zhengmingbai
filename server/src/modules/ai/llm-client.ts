@@ -37,7 +37,8 @@ function extractJson(raw: string): unknown {
 }
 
 export async function callTextModel(prompt: string, options: TextModelOptions = {}): Promise<string> {
-  const model = getConfig<string>('ai.text_model', 'doubao-seed-2-1-turbo-260628');
+  // v3.2.2：与视觉对齐，统一用 doubao-seed-evolving-latest-version（更快、视觉一致）
+  const model = getConfig<string>('ai.text_model', 'doubao-seed-evolving-latest-version');
   const stage = options.stage ?? 'plan_generate';
 
   const schemaHint = `\n\n严格输出 JSON（不要输出任何其他文字），结构如下：${PLAN_JSON_SCHEMA}`;

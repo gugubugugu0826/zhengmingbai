@@ -45,7 +45,8 @@ const FALLBACK_BASE_URL =
 
 /** 各 provider 的默认模型名（fallback 时按调用类型自动映射） */
 const FALLBACK_MODEL_MAP: Record<AiProvider, { vision: string; text: string }> = {
-  volcengine: { vision: 'doubao-seed-2-1-turbo-260628', text: 'doubao-seed-2-1-turbo-260628' },
+  // v3.2.2：volcengine 主用 Seed-Evolving（实测视觉/文本 4s 以内，比 2-1-turbo 更稳更快）
+  volcengine: { vision: 'doubao-seed-evolving-latest-version', text: 'doubao-seed-evolving-latest-version' },
   dashscope: { vision: 'qwen-vl-plus', text: 'qwen-plus' },
 };
 
@@ -109,7 +110,7 @@ function mapModelForProvider(model: string, targetProvider: AiProvider, isVision
 
 /**
  * 单次 HTTP 调用：发送 chat/completions 请求，成功返回解析结果，失败抛错。
- * 超时 20s（v3.2.1 收窄：覆盖单 provider 正常响应，失败快速进 fallback）。
+ * 超时 60s（v3.2.2：真实大图视觉调用需要更长时间，避免误触发 fallback）。
  */
 async function singleAttempt(
   url: string,
@@ -117,7 +118,7 @@ async function singleAttempt(
   body: string,
 ): Promise<ChatResult> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20_000);
+  const timer = setTimeout(() => controller.abort(), 60_000);
   try {
     const res = await fetch(url, {
       method: 'POST',
