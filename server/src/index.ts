@@ -50,10 +50,12 @@ app.use(
   }),
 );
 
-// v3.1 T01：CORS 白名单（API 无 cookie 场景，credentials 关闭；浏览器端带 Origin 才校验，小程序/服务端直连无 Origin 直接放行）
+// v3.2.2 P0：临时加 IP 入口（备案下来前的兜底，避免用户被 500 卡住）
 const corsAllowlist = new Set<string>([
   'https://zhengmingbai.cn',
   'https://www.zhengmingbai.cn',
+  'https://159.75.155.11',
+  'http://159.75.155.11',
 ]);
 const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 app.use(
