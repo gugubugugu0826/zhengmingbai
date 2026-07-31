@@ -17,6 +17,7 @@ import { maintenanceStore, type MaintenanceInfo } from '../../maintenance';
 import { MaintenancePage } from '../MaintenancePage';
 import { BottomTab } from './BottomTab';
 import { SideNav } from './SideNav';
+import { SiteFooter } from '../Footer';
 
 /** 公开路由（无壳，自己铺满全屏）：登录/注册/忘记密码等 */
 const SHELL_FREE_PREFIXES = ['/login', '/register', '/forgot-password'];
@@ -120,6 +121,7 @@ export function AppShell(): JSX.Element {
         <div className="mx-auto w-full max-w-content px-4 pb-24 md:px-6 md:pb-10 md:pt-8 desktop:px-12 desktop:py-10">
           <Outlet />
         </div>
+        <SiteFooter />
       </main>
 
       {/* 手机档（<768px）：底部 3 Tab */}

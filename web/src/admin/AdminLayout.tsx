@@ -7,6 +7,7 @@
 import type { JSX } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { adminTokenStore } from './auth';
+import { SiteFooter } from '../components/Footer';
 
 const NAV_ITEMS = [
   { to: '/admin/dashboard', label: '数据看板', icon: '📊' },
@@ -87,6 +88,7 @@ export function AdminLayout(): JSX.Element {
             <Outlet />
           </div>
         </main>
+        <SiteFooter />
       </div>
     </div>
   );

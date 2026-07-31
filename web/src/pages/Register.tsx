@@ -9,6 +9,7 @@ import { useState, type JSX, type KeyboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError, API_CODES, tokenStore } from '../api';
 import { AuthCard } from '../components/AuthCard';
+import { SiteFooter } from '../components/Footer';
 import { CaptchaDialog } from '../components/CaptchaDialog';
 import type { CaptchaValue } from '../components/CaptchaInput';
 import { toast, useAuthStore } from '../stores/auth';
@@ -241,6 +242,7 @@ export default function RegisterPage(): JSX.Element {
   };
 
   return (
+    <>
     <AuthCard title="注册整明白" subtitle="一个邮箱就能开始，送新人 20 点礼包">
       {/* v3.2 §4.2：输入框回车=点注册；CaptchaDialog 打开时不响应（弹窗内部自理回车） */}
       <div
@@ -420,5 +422,7 @@ export default function RegisterPage(): JSX.Element {
         }}
       />
     </AuthCard>
+    <SiteFooter />
+    </>
   );
 }

@@ -9,6 +9,7 @@ import { useState, type JSX, type KeyboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { AuthCard } from '../components/AuthCard';
+import { SiteFooter } from '../components/Footer';
 import { CaptchaDialog } from '../components/CaptchaDialog';
 import { toast } from '../stores/auth';
 
@@ -104,6 +105,7 @@ export default function ForgotPasswordPage(): JSX.Element {
   };
 
   return (
+    <>
     <AuthCard title="找回密码" subtitle="通过注册邮箱重置密码，重置后旧密码立即失效">
       {/* v3.2 §4.2：输入框回车=点重置密码；CaptchaDialog 打开时不响应（弹窗内部自理回车） */}
       <div
@@ -201,5 +203,7 @@ export default function ForgotPasswordPage(): JSX.Element {
         }}
       />
     </AuthCard>
+    <SiteFooter />
+    </>
   );
 }

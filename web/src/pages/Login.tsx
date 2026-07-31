@@ -12,6 +12,7 @@ import { useRef, useState, type JSX, type KeyboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError, tokenStore } from '../api';
 import { AuthCard } from '../components/AuthCard';
+import { SiteFooter } from '../components/Footer';
 import { CaptchaDialog } from '../components/CaptchaDialog';
 import { CaptchaInput, type CaptchaInputHandle, type CaptchaValue } from '../components/CaptchaInput';
 import { toast, useAuthStore } from '../stores/auth';
@@ -193,6 +194,7 @@ export default function LoginPage(): JSX.Element {
   };
 
   return (
+    <>
     <AuthCard title="登录" subtitle="邮箱验证码或密码，任选一种回家">
       {/* v3.2 §4.2：输入框回车=点登录；CaptchaDialog 打开时不响应（弹窗内部自理回车） */}
       <div
@@ -314,5 +316,7 @@ export default function LoginPage(): JSX.Element {
         }}
       />
     </AuthCard>
+    <SiteFooter />
+    </>
   );
 }

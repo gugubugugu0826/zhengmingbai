@@ -6,6 +6,7 @@
  */
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
+import { SiteFooter } from '../components/Footer';
 
 /** 政策要点（与首页弹窗口径一致） */
 const POLICY_POINTS: string[] = [
@@ -20,6 +21,7 @@ const POLICY_POINTS: string[] = [
 export default function PrivacyPage(): JSX.Element {
   const navigate = useNavigate();
   return (
+    <>
     <div className="w-full max-w-3xl">
       <PageHeader title="隐私政策" subtitle="你的东西你说了算，照片也一样" onBack={() => navigate(-1)} back />
       <div className="px-5 pb-10 pt-4 md:px-0">
@@ -41,6 +43,8 @@ export default function PrivacyPage(): JSX.Element {
           <p className="mt-3 text-[12px] text-warm-light">最后更新：2026-07-24</p>
         </div>
       </div>
+      <SiteFooter />
     </div>
+    </>
   );
 }
